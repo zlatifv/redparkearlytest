@@ -2,121 +2,212 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Red Park - Multiplayer 3D World</title>
     <style>
+        * {
+            touch-action: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Poppins', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
         }
+
         .ui-panel {
             position: absolute;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
             color: white;
-            border-radius: 12px;
-            padding: 12px 20px;
+            border-radius: 40px;
+            padding: 8px 16px;
             border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             z-index: 10;
             pointer-events: auto;
             font-size: 14px;
+            font-weight: 500;
         }
-        .top-left { top: 20px; left: 20px; display: flex; gap: 12px; }
-        .top-right { top: 20px; right: 20px; display: flex; gap: 12px; }
+
+        .top-left { top: 15px; left: 15px; display: flex; gap: 10px; }
+        .top-right { top: 15px; right: 15px; display: flex; gap: 10px; }
         .bottom-center {
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
-            background: rgba(0,0,0,0.6);
-            padding: 10px 20px;
-            border-radius: 40px;
+            gap: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 12px;
         }
+
         button {
             background: #ff4757;
             border: none;
             color: white;
-            padding: 8px 16px;
-            border-radius: 30px;
+            padding: 8px 18px;
+            border-radius: 40px;
             cursor: pointer;
             font-weight: bold;
             transition: 0.2s;
             font-size: 14px;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            touch-action: manipulation;
         }
+
+        button:active { transform: scale(0.96); }
         button.secondary { background: #2c3e66; }
-        button.admin { background: #d63031; }
-        button:hover { transform: scale(1.02); filter: brightness(1.1); }
+
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(4px);
+            z-index: 200;
+            backdrop-filter: blur(8px);
         }
+
         .modal-content {
             background: #1e272e;
-            border-radius: 24px;
-            padding: 30px;
-            width: 320px;
+            border-radius: 32px;
+            padding: 24px 20px;
+            width: 85%;
+            max-width: 340px;
             color: white;
             border: 1px solid #ff4757;
         }
+
         .modal-content input {
             width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 60px;
             border: none;
             background: #2f3e46;
             color: white;
+            font-size: 16px;
+            box-sizing: border-box;
         }
+
         .friend-list {
             max-height: 200px;
             overflow-y: auto;
-            margin-top: 10px;
+            margin-top: 12px;
         }
+
         .friend-item {
             background: #2c3e50;
-            margin: 5px 0;
-            padding: 5px 10px;
-            border-radius: 20px;
+            margin: 6px 0;
+            padding: 10px 12px;
+            border-radius: 60px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
+
         .info-text {
             position: absolute;
-            bottom: 80px;
-            left: 20px;
-            background: rgba(0,0,0,0.5);
+            bottom: 90px;
+            left: 15px;
+            background: rgba(0,0,0,0.55);
             padding: 5px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             pointer-events: none;
+            color: #ddd;
         }
+
         .admin-panel {
             position: absolute;
             top: 80px;
-            right: 20px;
-            width: 260px;
+            right: 15px;
+            width: 240px;
             background: #1e272e;
-            border-radius: 16px;
+            border-radius: 24px;
             padding: 16px;
             border: 1px solid gold;
             display: none;
-            z-index: 200;
+            z-index: 250;
         }
+
         .admin-panel.show { display: block; }
-        @media (max-width: 600px) {
-            button { padding: 6px 12px; font-size: 12px; }
+
+        .joystick-container {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: 130px;
+            height: 130px;
+            z-index: 150;
+        }
+
+        .joystick-base {
+            width: 120px;
+            height: 120px;
+            background: rgba(30,30,40,0.7);
+            border-radius: 60px;
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255,255,255,0.3);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+
+        .joystick-thumb {
+            width: 55px;
+            height: 55px;
+            background: #ff4757;
+            border-radius: 30px;
+            position: absolute;
+            top: 32.5px;
+            left: 32.5px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            transition: transform 0.05s linear;
+        }
+
+        .camera-area {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 60px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .camera-label {
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 768px) {
+            button { padding: 6px 14px; font-size: 13px; }
+            .ui-panel { padding: 6px 12px; }
+            .joystick-container { transform: scale(0.9); left: 5px; }
+            .camera-area { transform: scale(0.9); right: 5px; }
         }
     </style>
 </head>
@@ -128,23 +219,30 @@
     <div class="ui-panel top-right">
         <button id="friendsBtn">👥 Friends</button>
         <button id="settingsBtn">⚙️ Settings</button>
-        <div id="adminIndicator" style="display:none; background:#d63031; border-radius:20px; padding:0 8px; line-height:32px;">👑 ADMIN</div>
+        <div id="adminIndicator" style="display:none; background:#d63031; border-radius:30px; padding:0 12px; line-height:34px;">👑</div>
     </div>
     <div class="ui-panel bottom-center">
-        <span id="playerCount">Players: 0</span>
-        <span>|</span>
+        <span id="playerCount">👥 0</span>
         <span id="currentUserDisplay">Guest</span>
     </div>
-    <div class="info-text">🕹️ WASD Move | Mouse Look | Click to focus</div>
+    <div class="info-text">🕹️ Left stick move | Right area drag to look</div>
+
+    <div class="joystick-container" id="joystickContainer">
+        <div class="joystick-base"></div>
+        <div class="joystick-thumb" id="joystickThumb"></div>
+    </div>
+    <div class="camera-area" id="cameraDragArea">
+        <div class="camera-label">🎥 LOOK</div>
+    </div>
 
     <div id="authModal" class="modal" style="display:flex;">
         <div class="modal-content">
-            <h2>🏞️ Red Park</h2>
+            <h2>🏛️ RED PARK</h2>
             <p>Sign up / Log in</p>
             <input type="text" id="usernameInput" placeholder="Username">
             <input type="password" id="passwordInput" placeholder="Password">
-            <button id="signupBtn">Sign Up</button>
-            <button id="loginBtn" style="background:#2c3e66;">Log In</button>
+            <button id="signupBtn" style="width:100%; margin-bottom:8px;">Sign Up</button>
+            <button id="loginBtn" style="background:#2c3e66; width:100%;">Log In</button>
             <p style="font-size:12px; margin-top:12px;">Admin: zlati (any password)</p>
         </div>
     </div>
@@ -152,9 +250,9 @@
     <div id="menuModal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3>Menu</h3>
-            <button id="joinFriendBtn">Join Friend's World</button>
-            <button id="changeSettingsBtn">Settings</button>
-            <button id="closeMenuBtn">Close</button>
+            <button id="joinFriendBtn" style="width:100%; margin:8px 0;">Join Friend</button>
+            <button id="changeSettingsBtn" style="width:100%; margin:8px 0;">Settings</button>
+            <button id="closeMenuBtn" style="width:100%;">Close</button>
         </div>
     </div>
 
@@ -162,31 +260,29 @@
         <div class="modal-content">
             <h3>Friends</h3>
             <input type="text" id="addFriendInput" placeholder="Username to add">
-            <button id="addFriendConfirmBtn">Add Friend</button>
+            <button id="addFriendConfirmBtn" style="width:100%;">Add Friend</button>
             <div id="friendsListContainer" class="friend-list"></div>
-            <button id="closeFriendsBtn">Close</button>
+            <button id="closeFriendsBtn" style="width:100%; margin-top:12px;">Close</button>
         </div>
     </div>
 
     <div id="settingsModal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3>Settings</h3>
-            <label>🌓 Graphics Quality</label>
-            <select id="gfxSelect">
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+            <select id="gfxSelect" style="width:100%; padding:10px; margin:10px 0; border-radius:30px;">
+                <option value="medium">Graphics Quality</option>
+                <option value="low">Low (Performance)</option>
             </select>
-            <button id="closeSettingsBtn">Save & Close</button>
+            <button id="closeSettingsBtn" style="width:100%;">Save</button>
         </div>
     </div>
 
     <div id="adminPanel" class="admin-panel">
         <h4>Admin Panel (zlati)</h4>
-        <button id="adminKickAllBtn">Kick All Non-Admin</button>
-        <button id="adminSetWeatherBtn">Rainbow Weather</button>
-        <button id="adminBroadcastBtn">Broadcast MSG</button>
-        <button id="adminCloseBtn">Close</button>
+        <button id="adminKickAllBtn" style="width:100%; margin:5px 0;">Kick All Non-Admin</button>
+        <button id="adminSetWeatherBtn" style="width:100%; margin:5px 0;">Rainbow Sky</button>
+        <button id="adminBroadcastBtn" style="width:100%; margin:5px 0;">Broadcast</button>
+        <button id="adminCloseBtn" style="width:100%;">Close</button>
     </div>
 
     <script type="importmap">
@@ -205,22 +301,33 @@
 
         let currentUser = null;
         let isAdmin = false;
-        let players = {};
-        let localPlayerMesh;
-        let localPlayerLabel;
+        let localPlayerMesh, localPlayerLabel;
         let scene, camera, renderer, labelRenderer, controls;
-        let keys = { w: false, s: false, a: false, d: false };
-        let clock = new THREE.Clock();
-        let moveSpeed = 5;
+        let moveVector = { x: 0, z: 0 };
+        let moveSpeed = 5.5;
         let socketChannel;
         let playerId = Math.random().toString(36).substring(2, 8);
         let otherPlayers = new Map();
         let friendsList = [];
-
-        function saveFriends() {
-            if(currentUser) localStorage.setItem(`friends_${currentUser}`, JSON.stringify(friendsList));
-        }
+        let clock = new THREE.Clock();
         
+        let joystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+        let joystickRadius = 45;
+        let cameraDragActive = false;
+        let lastTouchX = 0, lastTouchY = 0;
+
+        const authModal = document.getElementById('authModal');
+        const menuModal = document.getElementById('menuModal');
+        const friendsModal = document.getElementById('friendsModal');
+        const settingsModal = document.getElementById('settingsModal');
+        const adminPanel = document.getElementById('adminPanel');
+        const playerCountSpan = document.getElementById('playerCount');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
+        const joystickBase = document.getElementById('joystickContainer');
+        const joystickThumb = document.getElementById('joystickThumb');
+
+        function saveFriends() { if(currentUser) localStorage.setItem(`friends_${currentUser}`, JSON.stringify(friendsList)); }
         function loadFriends() {
             if(currentUser) {
                 let raw = localStorage.getItem(`friends_${currentUser}`);
@@ -228,41 +335,26 @@
                 renderFriendsList();
             }
         }
-        
         function renderFriendsList() {
             const container = document.getElementById('friendsListContainer');
             if(!container) return;
-            if(friendsList.length === 0) {
-                container.innerHTML = '<p>No friends yet. Add some!</p>';
-                return;
-            }
-            container.innerHTML = friendsList.map(f => `<div class="friend-item">${f} <button class="joinFriendItemBtn" data-name="${f}">Join</button></div>`).join('');
+            if(friendsList.length === 0) { container.innerHTML = '<p style="text-align:center;">No friends yet. Add some!</p>'; return; }
+            container.innerHTML = friendsList.map(f => `<div class="friend-item">${f} <button class="joinFriendItemBtn" data-name="${f}" style="padding:4px 12px;">Join</button></div>`).join('');
             document.querySelectorAll('.joinFriendItemBtn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const friendName = btn.getAttribute('data-name');
-                    joinFriendWorld(friendName);
-                });
+                btn.addEventListener('click', (e) => joinFriendWorld(btn.getAttribute('data-name')));
             });
         }
-        
-        function joinFriendWorld(friendName) {
-            alert(`Joining ${friendName}'s session...`);
-            initMultiplayerChannel(`room_${friendName}`);
-        }
+        function joinFriendWorld(friendName) { alert(`Joining ${friendName}'s session...`); initMultiplayerChannel(`room_${friendName}`); }
         
         function initMultiplayerChannel(roomId = 'redpark_global') {
             if(socketChannel) socketChannel.close();
             socketChannel = new BroadcastChannel(roomId);
             socketChannel.onmessage = (event) => {
                 const data = event.data;
-                if(data.type === 'playerUpdate' && data.id !== playerId) {
-                    updateOtherPlayer(data.id, data.position, data.name, data.color);
-                }
+                if(data.type === 'playerUpdate' && data.id !== playerId) updateOtherPlayer(data.id, data.position, data.name, data.color);
                 if(data.type === 'playerLeave') removeOtherPlayer(data.id);
                 if(data.type === 'adminBroadcast' && !isAdmin) alert(`📢 Admin: ${data.message}`);
-                if(data.type === 'kickNonAdmins' && !isAdmin && currentUser !== 'zlati') {
-                    alert("You were kicked by admin!");
-                }
+                if(data.type === 'kickNonAdmins' && !isAdmin && currentUser !== 'zlati') alert("You were kicked by admin!");
             };
             setTimeout(() => broadcastMyState(), 500);
         }
@@ -270,57 +362,192 @@
         function broadcastMyState() {
             if(!localPlayerMesh) return;
             socketChannel?.postMessage({
-                type: 'playerUpdate',
-                id: playerId,
-                name: currentUser,
+                type: 'playerUpdate', id: playerId, name: currentUser,
                 position: { x: localPlayerMesh.position.x, y: localPlayerMesh.position.y, z: localPlayerMesh.position.z },
-                color: isAdmin ? 0xffaa44 : 0x66ccff
+                color: isAdmin ? 0xffaa44 : 0x5a9eff
             });
         }
         
         function updateOtherPlayer(id, pos, name, colorHex) {
             let obj = otherPlayers.get(id);
             if(!obj) {
-                const geometry = new THREE.BoxGeometry(0.8, 1.2, 0.8);
-                const material = new THREE.MeshStandardMaterial({ color: colorHex || 0x66ccff });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                scene.add(mesh);
+                // Create a good looking character for other players
+                const group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex || 0x5a9eff });
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.0, 8), bodyMat);
+                body.position.y = 0.5;
+                group.add(body);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffccaa }));
+                head.position.y = 1.0;
+                group.add(head);
+                const eyes = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                eyes.position.set(-0.15, 1.08, 0.4);
+                group.add(eyes);
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                eye2.position.set(0.15, 1.08, 0.4);
+                group.add(eye2);
+                
+                scene.add(group);
                 const div = document.createElement('div');
                 div.textContent = name;
-                div.style.cssText = 'color:white;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:12px;font-size:12px';
+                div.style.cssText = 'color:white;background:rgba(0,0,0,0.7);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:bold';
                 const label = new CSS2DObject(div);
                 scene.add(label);
-                obj = { mesh, label, name };
+                obj = { mesh: group, label, name };
                 otherPlayers.set(id, obj);
             }
-            obj.mesh.position.set(pos.x, pos.y, pos.z);
-            obj.label.position.set(pos.x, pos.y + 1.2, pos.z);
+            obj.mesh.position.set(pos.x, pos.y + 0.2, pos.z);
+            obj.label.position.set(pos.x, pos.y + 1.5, pos.z);
         }
         
         function removeOtherPlayer(id) {
             const obj = otherPlayers.get(id);
-            if(obj) {
-                scene.remove(obj.mesh);
-                scene.remove(obj.label);
-                otherPlayers.delete(id);
-            }
+            if(obj) { scene.remove(obj.mesh); scene.remove(obj.label); otherPlayers.delete(id); }
         }
         
-        function sendLeaveSignal() {
-            socketChannel?.postMessage({ type: 'playerLeave', id: playerId });
+        function sendLeaveSignal() { socketChannel?.postMessage({ type: 'playerLeave', id: playerId }); }
+
+        // Create a BEAUTIFUL character
+        function createStylizedCharacter(color, isLocal = false) {
+            const group = new THREE.Group();
+            
+            // Body (tunic style)
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.1 });
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.4, 0.9, 12), bodyMat);
+            body.position.y = 0.45;
+            group.add(body);
+            
+            // Head
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffddbb, roughness: 0.2 });
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 24, 24), headMat);
+            head.position.y = 0.95;
+            group.add(head);
+            
+            // Hair
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x4a2c2c });
+            const hair = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16), hairMat);
+            hair.position.y = 1.08;
+            hair.scale.set(1, 0.4, 1);
+            group.add(hair);
+            
+            // Eyes
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), eyeMat);
+            leftEye.position.set(-0.14, 1.02, 0.4);
+            group.add(leftEye);
+            const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), eyeMat);
+            rightEye.position.set(0.14, 1.02, 0.4);
+            group.add(rightEye);
+            
+            // Pupils
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), pupilMat);
+            leftPupil.position.set(-0.14, 1.01, 0.49);
+            group.add(leftPupil);
+            const rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), pupilMat);
+            rightPupil.position.set(0.14, 1.01, 0.49);
+            group.add(rightPupil);
+            
+            // Arms
+            const armMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+            const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 6), armMat);
+            leftArm.position.set(-0.55, 0.75, 0);
+            leftArm.rotation.z = 0.3;
+            group.add(leftArm);
+            const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 6), armMat);
+            rightArm.position.set(0.55, 0.75, 0);
+            rightArm.rotation.z = -0.3;
+            group.add(rightArm);
+            
+            return group;
+        }
+        
+        // Create HARVARD-STYLE BIG RESIDENCE
+        function createHarvardResidence() {
+            const group = new THREE.Group();
+            
+            // Main massive building
+            const mainMat = new THREE.MeshStandardMaterial({ color: 0x8B2500, roughness: 0.2, metalness: 0.05 });
+            const mainBuilding = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 10), mainMat);
+            mainBuilding.position.set(0, 4, 0);
+            group.add(mainBuilding);
+            
+            // Brick texture effect with windows
+            const windowMat = new THREE.MeshStandardMaterial({ color: 0xffdd99, emissive: 0x442200 });
+            for(let i = -4; i <= 4; i+=2) {
+                const windowGeo = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.2), windowMat);
+                windowGeo.position.set(i, 3.5, 5.1);
+                group.add(windowGeo);
+                const windowGeo2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.2), windowMat);
+                windowGeo2.position.set(i, 5.5, 5.1);
+                group.add(windowGeo2);
+            }
+            
+            // Grand entrance
+            const entranceMat = new THREE.MeshStandardMaterial({ color: 0x5a3a2a });
+            const entrance = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 1.5), entranceMat);
+            entrance.position.set(0, 2, 5.2);
+            group.add(entrance);
+            
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x3a2215 });
+            const door = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.5, 0.2), doorMat);
+            door.position.set(0, 2, 5.9);
+            group.add(door);
+            
+            // Tower (Harvard style)
+            const towerMat = new THREE.MeshStandardMaterial({ color: 0x9B3300 });
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(3, 12, 3), towerMat);
+            tower.position.set(-5, 6, -3);
+            group.add(tower);
+            
+            const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0xcc6600 }));
+            towerRoof.position.set(-5, 12, -3);
+            group.add(towerRoof);
+            
+            // Second tower
+            const tower2 = new THREE.Mesh(new THREE.BoxGeometry(3, 10, 3), towerMat);
+            tower2.position.set(5, 5, -4);
+            group.add(tower2);
+            const towerRoof2 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0xcc6600 }));
+            towerRoof2.position.set(5, 10, -4);
+            group.add(towerRoof2);
+            
+            // Roof
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xcc6633 });
+            const roofMain = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 1.5, 4), roofMat);
+            roofMain.rotation.y = Math.PI/4;
+            roofMain.position.set(0, 8.2, 0);
+            group.add(roofMain);
+            
+            // Columns at entrance
+            const columnMat = new THREE.MeshStandardMaterial({ color: 0xddccaa });
+            for(let i = -1.2; i <= 1.2; i+=2.4) {
+                const column = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 3.5, 8), columnMat);
+                column.position.set(i, 1.8, 6);
+                group.add(column);
+            }
+            
+            // Sign
+            const signDiv = document.createElement('div');
+            signDiv.textContent = '🏛️ RED RESIDENCES 🏛️';
+            signDiv.style.cssText = 'background:#8B2500;color:gold;padding:8px 20px;border-radius:40px;font-size:18px;font-weight:bold;border:2px solid gold';
+            const signLabel = new CSS2DObject(signDiv);
+            signLabel.position.set(0, 9, 6);
+            group.add(signLabel);
+            
+            group.position.set(12, 0, 8);
+            return group;
         }
         
         function init3D() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.Fog(0x87CEEB, 50, 100);
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.005);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(12, 4, 16);
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
-            
             labelRenderer = new CSS2DRenderer();
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.domElement.style.position = 'absolute';
@@ -328,89 +555,150 @@
             labelRenderer.domElement.style.left = '0px';
             document.body.appendChild(labelRenderer.domElement);
             
-            const ambientLight = new THREE.AmbientLight(0x404060);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x7c8c9c);
             scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            const dirLight = new THREE.DirectionalLight(0xfff5e6, 1);
             dirLight.position.set(10, 20, 5);
-            dirLight.castShadow = true;
             scene.add(dirLight);
+            const backLight = new THREE.PointLight(0x6688cc, 0.4);
+            backLight.position.set(-5, 5, -10);
+            scene.add(backLight);
             
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x5c9e5e, roughness: 0.8 }));
+            // Ground with grass
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x5cad5c, roughness: 0.8 });
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), groundMat);
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = -0.5;
-            ground.receiveShadow = true;
             scene.add(ground);
             
-            // Red Residences (The home building)
-            const buildingMat = new THREE.MeshStandardMaterial({ color: 0xaa3e3e });
-            const mainBlock = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), buildingMat);
-            mainBlock.position.set(12, 0.5, 8);
-            scene.add(mainBlock);
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(2.2, 1.5, 4), new THREE.MeshStandardMaterial({ color: 0x8b3a3a }));
-            roof.position.set(12, 2.2, 8);
-            scene.add(roof);
+            // Paths
+            const pathMat = new THREE.MeshStandardMaterial({ color: 0xcdb891 });
+            const path = new THREE.Mesh(new THREE.PlaneGeometry(4, 20), pathMat);
+            path.rotation.x = -Math.PI / 2;
+            path.position.set(12, -0.4, 12);
+            scene.add(path);
             
-            const signDiv = document.createElement('div');
-            signDiv.textContent = '🏠 Red Residences';
-            signDiv.style.cssText = 'background:#3a1e1e;padding:4px 10px;border-radius:8px;font-weight:bold;color:white';
-            const signLabel = new CSS2DObject(signDiv);
-            signLabel.position.set(12, 2.2, 8.5);
-            scene.add(signLabel);
-            
-            // Trees
-            for(let i = 0; i < 40; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const rad = 15 + Math.random() * 25;
+            // Trees around the residence
+            const treePositions = [[6, 12], [18, 12], [6, 4], [18, 4], [8, 15], [16, 15], [8, 1], [16, 1]];
+            treePositions.forEach(pos => {
                 const treeGroup = new THREE.Group();
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 1.2), new THREE.MeshStandardMaterial({ color: 0x8B5A2B }));
-                const foliage = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0x4caf50 }));
-                foliage.position.y = 1;
-                treeGroup.add(trunk, foliage);
-                treeGroup.position.set(Math.cos(angle) * rad, -0.2, Math.sin(angle) * rad);
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 1.5), new THREE.MeshStandardMaterial({ color: 0x8B5A2B }));
+                const foliage1 = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0x4caf50 }));
+                foliage1.position.y = 1.2;
+                const foliage2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1, 8), new THREE.MeshStandardMaterial({ color: 0x3d9e3d }));
+                foliage2.position.y = 2;
+                treeGroup.add(trunk, foliage1, foliage2);
+                treeGroup.position.set(pos[0], -0.3, pos[1]);
                 scene.add(treeGroup);
-            }
+            });
             
-            localPlayerMesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.7), new THREE.MeshStandardMaterial({ color: 0x44aaee }));
-            localPlayerMesh.castShadow = true;
+            // Add the BIG Harvard-style residence
+            const residence = createHarvardResidence();
+            scene.add(residence);
+            
+            // Create local player (beautiful character)
+            localPlayerMesh = createStylizedCharacter(0x5a9eff, true);
             scene.add(localPlayerMesh);
+            
             const nameDiv = document.createElement('div');
             nameDiv.textContent = currentUser;
-            nameDiv.style.cssText = 'background:black;color:white;padding:2px 8px;border-radius:16px';
+            nameDiv.style.cssText = 'background:#000000cc;color:white;padding:4px 12px;border-radius:30px;font-size:12px;font-weight:bold';
             localPlayerLabel = new CSS2DObject(nameDiv);
             scene.add(localPlayerLabel);
             localPlayerMesh.position.set(12, -0.2, 9);
             
+            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableZoom = false;
+            controls.enablePan = false;
             controls.enableDamping = true;
-            controls.target.set(12, 1, 9);
+            controls.dampingFactor = 0.05;
+            controls.target.set(12, 1.5, 9);
+            controls.update();
+            controls.touchRotate = false;
             
-            window.addEventListener('keydown', (e) => { if(['w','s','a','d'].includes(e.key)) keys[e.key] = true; });
-            window.addEventListener('keyup', (e) => { if(['w','s','a','d'].includes(e.key)) keys[e.key] = false; });
-            
-            function animate() {
-                requestAnimationFrame(animate);
-                if(localPlayerMesh) {
-                    let move = new THREE.Vector3(0,0,0);
-                    if(keys.w) move.z -= 1;
-                    if(keys.s) move.z += 1;
-                    if(keys.a) move.x -= 1;
-                    if(keys.d) move.x += 1;
-                    move.normalize();
-                    let newPos = localPlayerMesh.position.clone().add(move.multiplyScalar(moveSpeed * 0.016));
-                    newPos.x = Math.max(-35, Math.min(35, newPos.x));
-                    newPos.z = Math.max(-35, Math.min(35, newPos.z));
-                    localPlayerMesh.position.copy(newPos);
-                    localPlayerLabel.position.copy(localPlayerMesh.position);
-                    localPlayerLabel.position.y += 1.2;
-                    camera.position.lerp(new THREE.Vector3(localPlayerMesh.position.x, localPlayerMesh.position.y + 2, localPlayerMesh.position.z + 5), 0.1);
-                    controls.target.copy(localPlayerMesh.position);
-                    controls.update();
-                    broadcastMyState();
-                }
-                renderer.render(scene, camera);
-                labelRenderer.render(scene, camera);
-            }
             animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.033);
+            if(localPlayerMesh) {
+                if(moveVector.x !== 0 || moveVector.z !== 0) {
+                    let move = new THREE.Vector3(moveVector.x, 0, moveVector.z).normalize();
+                    let newPos = localPlayerMesh.position.clone().add(move.multiplyScalar(moveSpeed * delta));
+                    newPos.x = Math.max(-40, Math.min(55, newPos.x));
+                    newPos.z = Math.max(-40, Math.min(55, newPos.z));
+                    localPlayerMesh.position.copy(newPos);
+                    // Add slight idle animation to arms
+                    if(localPlayerMesh.children[4]) localPlayerMesh.children[4].rotation.z = 0.3 + Math.sin(Date.now() * 0.01) * 0.1;
+                    if(localPlayerMesh.children[5]) localPlayerMesh.children[5].rotation.z = -0.3 - Math.sin(Date.now() * 0.01) * 0.1;
+                }
+                localPlayerLabel.position.copy(localPlayerMesh.position);
+                localPlayerLabel.position.y += 1.5;
+                controls.target.copy(localPlayerMesh.position);
+                controls.update();
+                broadcastMyState();
+            }
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        // Joystick and camera controls (same as before)
+        function initJoystick() {
+            const updateCenter = () => {
+                const rect = joystickBase.getBoundingClientRect();
+                joystickCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+            };
+            const onTouchMove = (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const dx = touch.clientX - joystickCenter.x;
+                const dy = touch.clientY - joystickCenter.y;
+                const dist = Math.min(Math.hypot(dx, dy), joystickRadius);
+                const angle = Math.atan2(dy, dx);
+                const limitedX = Math.cos(angle) * dist;
+                const limitedY = Math.sin(angle) * dist;
+                joystickThumb.style.transform = `translate(${limitedX}px, ${limitedY}px)`;
+                const intensity = dist / joystickRadius;
+                moveVector.x = (dx / joystickRadius) * intensity;
+                moveVector.z = (dy / joystickRadius) * intensity;
+                moveVector.x = Math.min(1, Math.max(-1, moveVector.x));
+                moveVector.z = Math.min(1, Math.max(-1, moveVector.z));
+            };
+            const onTouchEnd = () => {
+                joystickThumb.style.transform = `translate(0px, 0px)`;
+                moveVector = { x: 0, z: 0 };
+            };
+            const onTouchStart = (e) => { e.preventDefault(); updateCenter(); onTouchMove(e); };
+            window.addEventListener('resize', updateCenter);
+            joystickBase.addEventListener('touchstart', onTouchStart, { passive: false });
+            joystickBase.addEventListener('touchmove', onTouchMove, { passive: false });
+            joystickBase.addEventListener('touchend', onTouchEnd);
+        }
+        
+        function initCameraDrag() {
+            const dragArea = document.getElementById('cameraDragArea');
+            dragArea.addEventListener('touchstart', (e) => { e.preventDefault(); cameraDragActive = true; const touch = e.touches[0]; lastTouchX = touch.clientX; lastTouchY = touch.clientY; });
+            dragArea.addEventListener('touchmove', (e) => {
+                if(!cameraDragActive) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - lastTouchX;
+                const deltaY = touch.clientY - lastTouchY;
+                if(deltaX !== 0) controls.object.rotation.y -= deltaX * 0.008;
+                if(deltaY !== 0) {
+                    let newPitch = controls.object.rotation.x - deltaY * 0.008;
+                    newPitch = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, newPitch));
+                    controls.object.rotation.x = newPitch;
+                }
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+                controls.target.copy(localPlayerMesh.position);
+                controls.update();
+            });
+            dragArea.addEventListener('touchend', () => { cameraDragActive = false; });
         }
         
         function handleAuth() {
@@ -426,10 +714,9 @@
             };
             document.getElementById('loginBtn').onclick = () => {
                 const user = document.getElementById('usernameInput').value.trim();
-                const pwd = document.getElementById('passwordInput').value;
                 if(user === 'zlati') return completeLogin('zlati');
                 let users = JSON.parse(localStorage.getItem('users') || '{}');
-                if(users[user] && users[user].password === pwd) completeLogin(user);
+                if(users[user] && users[user].password === document.getElementById('passwordInput').value) completeLogin(user);
                 else alert("Invalid credentials");
             };
         }
@@ -438,62 +725,4 @@
             currentUser = username;
             isAdmin = (username === 'zlati');
             localStorage.setItem('currentUser', username);
-            document.getElementById('authModal').style.display = 'none';
-            document.getElementById('currentUserDisplay').innerText = username;
-            if(isAdmin) {
-                document.getElementById('adminIndicator').style.display = 'block';
-                const adminBtn = document.createElement('button');
-                adminBtn.innerText = '🛠️ Admin';
-                adminBtn.onclick = () => document.getElementById('adminPanel').classList.toggle('show');
-                document.querySelector('.top-right').appendChild(adminBtn);
-            }
-            loadFriends();
-            init3D();
-            initMultiplayerChannel();
-            
-            document.getElementById('homeBtn').onclick = () => { if(localPlayerMesh) localPlayerMesh.position.set(12, -0.2, 9); };
-            document.getElementById('menuBtn').onclick = () => document.getElementById('menuModal').style.display = 'flex';
-            document.getElementById('closeMenuBtn').onclick = () => document.getElementById('menuModal').style.display = 'none';
-            document.getElementById('friendsBtn').onclick = () => { document.getElementById('friendsModal').style.display = 'flex'; renderFriendsList(); };
-            document.getElementById('closeFriendsBtn').onclick = () => document.getElementById('friendsModal').style.display = 'none';
-            document.getElementById('addFriendConfirmBtn').onclick = () => {
-                const friendName = document.getElementById('addFriendInput').value.trim();
-                if(friendName && friendName !== currentUser && !friendsList.includes(friendName)) {
-                    friendsList.push(friendName);
-                    saveFriends();
-                    renderFriendsList();
-                    document.getElementById('addFriendInput').value = '';
-                }
-            };
-            document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').style.display = 'flex';
-            document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').style.display = 'none';
-            document.getElementById('joinFriendBtn').onclick = () => {
-                const target = prompt("Enter friend's username:");
-                if(target) joinFriendWorld(target);
-                document.getElementById('menuModal').style.display = 'none';
-            };
-            
-            document.getElementById('adminKickAllBtn').onclick = () => socketChannel?.postMessage({ type: 'kickNonAdmins' });
-            document.getElementById('adminSetWeatherBtn').onclick = () => { scene.background.setHex(0xffaa88); setTimeout(() => scene.background.setHex(0x87CEEB), 5000); };
-            document.getElementById('adminBroadcastBtn').onclick = () => {
-                const msg = prompt("Broadcast message:");
-                if(msg) socketChannel?.postMessage({ type: 'adminBroadcast', message: msg });
-            };
-            document.getElementById('adminCloseBtn').onclick = () => document.getElementById('adminPanel').classList.remove('show');
-        }
-        
-        setInterval(() => {
-            document.getElementById('playerCount').innerText = `Players: ${otherPlayers.size + 1}`;
-        }, 1000);
-        
-        window.addEventListener('beforeunload', () => sendLeaveSignal());
-        
-        const savedUser = localStorage.getItem('currentUser');
-        if(savedUser && savedUser !== 'null') {
-            completeLogin(savedUser);
-        } else {
-            handleAuth();
-        }
-    </script>
-</body>
-</html>
+            authModal.style.display = 'none
