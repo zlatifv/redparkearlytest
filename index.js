@@ -1,412 +1,310 @@
-// ==================== CURRENCY SYSTEM ====================
-class CurrencySystem {
-  constructor() {
-    this.currencyName = 'Coins';
-    this.currencySymbol = '🪙';
-    this.players = this.loadAllPlayers();
-    this.currentPlayerId = 'player_' + Math.random().toString(36).substr(2, 9);
-    this.initializePlayer(this.currentPlayerId);
-  }
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const crypto = require('crypto');
 
-  initializePlayer(playerId) {
-    if (!this.players[playerId]) {
-      this.players[playerId] = {
-        id: playerId,
-        balance: 500,
-        totalEarned: 0,
-        totalSpent: 0,
-        transactions: [],
-        createdAt: new Date().toISOString()
-      };
-      this.saveAllPlayers();
-    }
-    return this.players[playerId];
-  }
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 
-  addCurrency(playerId, amount, reason = 'activity') {
-    const player = this.initializePlayer(playerId);
-    player.balance += amount;
-    player.totalEarned += amount;
+app.use(express.static(__dirname));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-    player.transactions.push({
-      type: 'earn',
-      amount: amount,
-      reason: reason,
-      timestamp: new Date().toISOString()
-    });
+const users = {};
+const sessions = {};
+const players = {};
 
-    this.saveAllPlayers();
-    this.displayNotification(`+${amount} ${this.currencySymbol}`, 'success');
-    this.updateBalanceDisplay(playerId);
-    return player;
-  }
+function hash(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
+function genToken() { return crypto.randomBytes(16).toString('hex'); }
+function getUsername(token) { return sessions[token] || null; }
 
-  deductCurrency(playerId, amount, reason = 'purchase') {
-    const player = this.initializePlayer(playerId);
+// seed admin
+users['zlati'] = { password: hash('changeme'), color: '#4ade80', admin: true, mod: true, banned: false, muted: false, warnings: [], friends: [], friendRequests: [] };
 
-    if (player.balance < amount) {
-      this.displayNotification('❌ Insufficient currency!', 'error');
-      return false;
-    }
+// ==================== TAG MINI-GAME ====================
+const tagGame = {
+  active: false,
+  itSocketId: null,
+  startedAt: 0,
+  duration: 90000, // 90 seconds
+  participants: new Set(),
+  timer: null
+};
 
-    player.balance -= amount;
-    player.totalSpent += amount;
-
-    player.transactions.push({
-      type: 'spend',
-      amount: amount,
-      reason: reason,
-      timestamp: new Date().toISOString()
-    });
-
-    this.saveAllPlayers();
-    this.displayNotification(`-${amount} ${this.currencySymbol}`, 'warning');
-    this.updateBalanceDisplay(playerId);
-    return true;
-  }
-
-  getBalance(playerId) {
-    const player = this.initializePlayer(playerId);
-    return player.balance;
-  }
-
-  getPlayerStats(playerId) {
-    return this.initializePlayer(playerId);
-  }
-
-  saveAllPlayers() {
-    localStorage.setItem('redpark_players', JSON.stringify(this.players));
-  }
-
-  loadAllPlayers() {
-    const data = localStorage.getItem('redpark_players');
-    return data ? JSON.parse(data) : {};
-  }
-
-  displayNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => notification.remove(), 3000);
-  }
-
-  updateBalanceDisplay(playerId) {
-    const balance = this.getBalance(playerId);
-    const displayElements = document.querySelectorAll('[data-balance-display]');
-    displayElements.forEach(el => {
-      el.textContent = `${this.currencySymbol} ${balance}`;
-    });
-  }
+function broadcastTagState() {
+  io.emit('tag_state', {
+    active: tagGame.active,
+    itUsername: tagGame.itSocketId && players[tagGame.itSocketId] ? players[tagGame.itSocketId].username : null,
+    participants: Array.from(tagGame.participants).map(sid => players[sid]?.username).filter(Boolean),
+    msLeft: tagGame.active ? Math.max(0, tagGame.duration - (Date.now() - tagGame.startedAt)) : 0
+  });
 }
 
-// ==================== MINI GAMES ====================
-class MiniGames {
-  constructor(currencySystem) {
-    this.currency = currencySystem;
-  }
+function endTagGame(reason) {
+  tagGame.active = false;
+  if (tagGame.timer) clearTimeout(tagGame.timer);
+  tagGame.timer = null;
+  const winnerUsername = tagGame.itSocketId && players[tagGame.itSocketId] ? players[tagGame.itSocketId].username : null;
+  io.emit('tag_ended', { reason, lastIt: winnerUsername });
+  tagGame.itSocketId = null;
+  tagGame.participants.clear();
+  broadcastTagState();
+}
 
-  // Game 1: Coin Flip
-  playCoinFlip(playerId) {
-    const bet = 10;
-    if (this.currency.getBalance(playerId) < bet) {
-      this.currency.displayNotification('Not enough currency to play!', 'error');
-      return;
+io.on('connection', (socket) => {
+  socket.on('token_login', ({ token }) => {
+    const username = getUsername(token);
+    const user = users[username];
+    if (!username || !user) return socket.emit('token_invalid');
+    if (user.banned) return socket.emit('token_invalid');
+    socket.emit('auth_ok', { token, username, color: user.color, admin: user.admin, mod: !!user.mod });
+  });
+
+  socket.on('register', ({ username, password }) => {
+    username = username.trim().toLowerCase();
+    if (!username || !password) return socket.emit('auth_error', 'Fill all fields');
+    if (username.length < 3) return socket.emit('auth_error', 'Username too short');
+    if (users[username]) return socket.emit('auth_error', 'Username taken');
+    const colors = ['#60a5fa','#34d399','#f472b6','#fb923c','#a78bfa','#facc15','#38bdf8'];
+    users[username] = { password: hash(password), color: colors[Math.floor(Math.random()*colors.length)], admin: false, mod: false, banned: false, muted: false, warnings: [], friends: [], friendRequests: [] };
+    const token = genToken(); sessions[token] = username;
+    socket.emit('auth_ok', { token, username, color: users[username].color, admin: false, mod: false });
+  });
+
+  socket.on('login', ({ username, password }) => {
+    username = username.trim().toLowerCase();
+    const user = users[username];
+    if (!user) return socket.emit('auth_error', 'User not found');
+    if (user.password !== hash(password)) return socket.emit('auth_error', 'Wrong password');
+    if (user.banned) return socket.emit('auth_error', 'You are banned');
+    const token = genToken(); sessions[token] = username;
+    socket.emit('auth_ok', { token, username, color: user.color, admin: user.admin, mod: !!user.mod });
+  });
+
+  socket.on('join_world', ({ token }) => {
+    const username = getUsername(token);
+    const user = users[username];
+    if (!username || !user) return socket.emit('kick', 'Not authenticated');
+    if (user.banned) return socket.emit('kick', 'You are banned');
+    socket.data.username = username;
+    players[socket.id] = { username, x: (Math.random()-0.5)*30, y: 0, z: (Math.random()-0.5)*30, rotY: 0, color: user.color };
+    socket.emit('world_state', { players: Object.entries(players).filter(([id]) => id !== socket.id).map(([id, p]) => ({ id, ...p })) });
+    socket.broadcast.emit('player_joined', { id: socket.id, ...players[socket.id] });
+    socket.emit('friend_data', { friends: user.friends, requests: user.friendRequests });
+    socket.emit('account_status', { mod: !!user.mod, muted: !!user.muted, warnings: user.warnings || [] });
+  });
+
+  socket.on('move', ({ x, y, z, rotY, anim }) => {
+    if (!players[socket.id]) return;
+    Object.assign(players[socket.id], { x, y, z, rotY, anim });
+    socket.broadcast.emit('player_moved', { id: socket.id, x, y, z, rotY, anim });
+  });
+
+  socket.on('chat', ({ token, message }) => {
+    const username = getUsername(token);
+    if (!username || !message || message.length > 200) return;
+    const user = users[username];
+    if (user.banned) return;
+    if (user.muted) return socket.emit('chat_blocked', 'You are muted and cannot chat.');
+    io.emit('chat_msg', { username, message, color: user.color, admin: user.admin, mod: !!user.mod, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+  });
+
+  socket.on('friend_request', ({ token, toUsername }) => {
+    const from = getUsername(token); toUsername = toUsername.trim().toLowerCase();
+    if (!from || !users[toUsername]) return socket.emit('friend_error', 'User not found');
+    if (toUsername === from) return socket.emit('friend_error', "Can't add yourself");
+    if (users[toUsername].friends.includes(from)) return socket.emit('friend_error', 'Already friends');
+    if (users[toUsername].friendRequests.includes(from)) return socket.emit('friend_error', 'Request already sent');
+    users[toUsername].friendRequests.push(from);
+    socket.emit('friend_sent', toUsername);
+    for (const [sid, p] of Object.entries(players)) { if (p.username === toUsername) io.to(sid).emit('friend_request_received', { from }); }
+  });
+
+  socket.on('friend_accept', ({ token, fromUsername }) => {
+    const username = getUsername(token); fromUsername = fromUsername.trim().toLowerCase();
+    const user = users[username];
+    if (!user || !user.friendRequests.includes(fromUsername)) return;
+    user.friendRequests = user.friendRequests.filter(u => u !== fromUsername);
+    if (!user.friends.includes(fromUsername)) user.friends.push(fromUsername);
+    if (users[fromUsername] && !users[fromUsername].friends.includes(username)) users[fromUsername].friends.push(username);
+    socket.emit('friend_data', { friends: user.friends, requests: user.friendRequests });
+    for (const [sid, p] of Object.entries(players)) { if (p.username === fromUsername) io.to(sid).emit('friend_accepted', { by: username }); }
+  });
+
+  socket.on('friend_decline', ({ token, fromUsername }) => {
+    const username = getUsername(token); const user = users[username];
+    if (!user) return;
+    user.friendRequests = user.friendRequests.filter(u => u !== fromUsername);
+    socket.emit('friend_data', { friends: user.friends, requests: user.friendRequests });
+  });
+
+  socket.on('friend_remove', ({ token, friendUsername }) => {
+    const username = getUsername(token); if (!username) return;
+    users[username].friends = users[username].friends.filter(u => u !== friendUsername);
+    if (users[friendUsername]) users[friendUsername].friends = users[friendUsername].friends.filter(u => u !== username);
+    socket.emit('friend_data', { friends: users[username].friends, requests: users[username].friendRequests });
+  });
+
+  socket.on('admin_action', ({ token, action, targetUsername, reason }) => {
+    const username = getUsername(token);
+    const actor = users[username];
+    if (!username || !actor || (!actor.admin && !actor.mod)) return socket.emit('admin_error', 'Not authorized');
+    if (targetUsername === 'zlati') return socket.emit('admin_error', "Can't target owner");
+    const targetKey = targetUsername.trim().toLowerCase();
+    const target = users[targetKey];
+    if (!target) return socket.emit('admin_error', 'User not found');
+
+    // Moderators can only kick, mute/unmute, and warn. Admins can do everything.
+    const modAllowed = ['kick', 'mute', 'unmute', 'warn'];
+    if (!actor.admin && actor.mod && !modAllowed.includes(action)) {
+      return socket.emit('admin_error', 'Moderators cannot do that — admin only');
+    }
+    if ((action === 'makeadmin' || action === 'removeadmin' || action === 'makemod' || action === 'removemod') && !actor.admin) {
+      return socket.emit('admin_error', 'Admin only action');
     }
 
-    this.currency.deductCurrency(playerId, bet, 'coin-flip-bet');
-
-    const modal = this.createGameModal('🪙 Coin Flip', `
-      <div style="text-align: center; padding: 20px;">
-        <p style="font-size: 16px; margin-bottom: 20px;">Choose: Heads or Tails?</p>
-        <div class="flip-container">
-          <button class="flip-btn" onclick="window.miniGames.resolveCoinFlip('${playerId}', 'heads', ${bet})">
-            👤 Heads
-          </button>
-          <button class="flip-btn" onclick="window.miniGames.resolveCoinFlip('${playerId}', 'tails', ${bet})">
-            🪙 Tails
-          </button>
-        </div>
-        <div id="result" class="result-display" style="display: none;"></div>
-      </div>
-    `);
-  }
-
-  resolveCoinFlip(playerId, choice, bet) {
-    const result = Math.random() > 0.5 ? 'heads' : 'tails';
-    const resultDiv = document.querySelector('#result');
-    resultDiv.style.display = 'block';
-
-    if (choice === result) {
-      const reward = bet * 2;
-      this.currency.addCurrency(playerId, reward, 'coin-flip-win');
-      resultDiv.innerHTML = `✅ You Won!<br>${result.toUpperCase()}<br>+${reward} ${this.currency.currencySymbol}`;
-      resultDiv.style.color = '#4CAF50';
-    } else {
-      resultDiv.innerHTML = `❌ You Lost!<br>It was ${result.toUpperCase()}`;
-      resultDiv.style.color = '#f44336';
-    }
-
-    setTimeout(() => {
-      const modal = resultDiv.closest('.modal');
-      if (modal && modal.parentElement) {
-        modal.parentElement.remove();
-        const overlay = document.querySelector('.modal-overlay');
-        if (overlay) overlay.remove();
+    if (action === 'ban') {
+      target.banned = true;
+      for (const [sid, p] of Object.entries(players)) if (p.username === targetKey) io.to(sid).emit('kick', 'Banned by admin.');
+    } else if (action === 'unban') {
+      target.banned = false;
+    } else if (action === 'kick') {
+      for (const [sid, p] of Object.entries(players)) if (p.username === targetKey) io.to(sid).emit('kick', 'Kicked by admin.');
+    } else if (action === 'makeadmin') {
+      target.admin = true;
+    } else if (action === 'removeadmin') {
+      target.admin = false;
+    } else if (action === 'makemod') {
+      target.mod = true;
+    } else if (action === 'removemod') {
+      target.mod = false;
+    } else if (action === 'mute') {
+      target.muted = true;
+      for (const [sid, p] of Object.entries(players)) if (p.username === targetKey) io.to(sid).emit('you_muted', true);
+    } else if (action === 'unmute') {
+      target.muted = false;
+      for (const [sid, p] of Object.entries(players)) if (p.username === targetKey) io.to(sid).emit('you_muted', false);
+    } else if (action === 'warn') {
+      target.warnings = target.warnings || [];
+      target.warnings.push({ by: username, reason: reason || 'No reason given', time: Date.now() });
+      for (const [sid, p] of Object.entries(players)) {
+        if (p.username === targetKey) io.to(sid).emit('you_warned', { by: username, reason: reason || 'No reason given', count: target.warnings.length });
       }
-    }, 2500);
-  }
-
-  // Game 2: Number Guessing
-  playNumberGuessing(playerId) {
-    const bet = 15;
-    if (this.currency.getBalance(playerId) < bet) {
-      this.currency.displayNotification('Not enough currency to play!', 'error');
-      return;
     }
+    socket.emit('admin_success', `Done: ${action} on ${targetKey}`);
+  });
 
-    this.currency.deductCurrency(playerId, bet, 'number-guess-bet');
-    const secretNumber = Math.floor(Math.random() * 10) + 1;
+  socket.on('admin_list', ({ token }) => {
+    const username = getUsername(token);
+    const actor = users[username];
+    if (!username || !actor || (!actor.admin && !actor.mod)) return;
+    socket.emit('admin_list', Object.entries(users).map(([u, d]) => ({
+      username: u,
+      admin: d.admin,
+      mod: !!d.mod,
+      banned: d.banned,
+      muted: !!d.muted,
+      warnings: (d.warnings || []).length,
+      online: Object.values(players).some(p => p.username === u)
+    })));
+  });
 
-    const modal = this.createGameModal('🎲 Number Guessing', `
-      <div style="text-align: center; padding: 20px;">
-        <p style="margin-bottom: 20px;">Guess a number between 1 and 10</p>
-        <div class="number-input-container">
-          <input type="number" id="guess-input" min="1" max="10" placeholder="Enter number">
-          <button onclick="window.miniGames.checkGuess('${playerId}', ${secretNumber}, ${bet})">
-            Guess
-          </button>
-        </div>
-        <div id="guess-result" class="result-display"></div>
-      </div>
-    `);
-
-    document.getElementById('guess-input').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        window.miniGames.checkGuess(playerId, secretNumber, bet);
+  socket.on('visit_request', ({ token, toUsername }) => {
+    const from = getUsername(token);
+    toUsername = (toUsername || '').trim().toLowerCase();
+    if (!from || !users[toUsername]) return socket.emit('visit_error', 'User not found');
+    if (toUsername === from) return socket.emit('visit_error', "Can't visit yourself");
+    // Find the target socket and send them the request
+    for (const [sid, p] of Object.entries(players)) {
+      if (p.username === toUsername) {
+        io.to(sid).emit('visit_request_received', { from, fromColor: users[from]?.color || '#fff' });
+        return;
       }
-    });
-
-    window.miniGames.attempts = 0;
-  }
-
-  checkGuess(playerId, secretNumber, bet) {
-    const guessInput = document.getElementById('guess-input');
-    const guess = parseInt(guessInput.value);
-    const resultDiv = document.getElementById('guess-result');
-    this.attempts = (this.attempts || 0) + 1;
-
-    if (isNaN(guess)) {
-      resultDiv.textContent = 'Please enter a valid number';
-      resultDiv.style.color = '#FF9800';
-      return;
     }
+    socket.emit('visit_error', `${toUsername} is not online`);
+  });
 
-    if (guess === secretNumber) {
-      const reward = bet * 3;
-      this.currency.addCurrency(playerId, reward, 'number-guess-win');
-      resultDiv.innerHTML = `✅ Correct!<br>The number was ${secretNumber}<br>+${reward} ${this.currency.currencySymbol}`;
-      resultDiv.style.color = '#4CAF50';
-      guessInput.disabled = true;
-      document.querySelector('button[onclick*="checkGuess"]').disabled = true;
-      setTimeout(() => {
-        const overlay = document.querySelector('.modal-overlay');
-        if (overlay) overlay.click();
-      }, 2500);
-    } else {
-      const hint = guess < secretNumber ? '📈 Too Low' : '📉 Too High';
-      resultDiv.innerHTML = `${hint}<br>Attempt ${this.attempts} - Try again!`;
-      resultDiv.style.color = '#FF9800';
-      guessInput.value = '';
-      guessInput.focus();
+  socket.on('visit_accept', ({ token, fromUsername }) => {
+    const username = getUsername(token);
+    fromUsername = (fromUsername || '').trim().toLowerCase();
+    if (!username) return;
+    // Teleport the requester to the accepter's position
+    const accepterPlayer = Object.values(players).find(p => p.username === username);
+    for (const [sid, p] of Object.entries(players)) {
+      if (p.username === fromUsername) {
+        io.to(sid).emit('visit_teleport', {
+          x: accepterPlayer ? accepterPlayer.x : 0,
+          y: accepterPlayer ? accepterPlayer.y : 0,
+          z: accepterPlayer ? accepterPlayer.z : 0,
+          toUsername: username
+        });
+        socket.emit('visit_guest_arriving', { fromUsername });
+        return;
+      }
     }
-  }
+  });
 
-  // Game 3: Memory Match
-  playMemoryMatch(playerId) {
-    const bet = 20;
-    if (this.currency.getBalance(playerId) < bet) {
-      this.currency.displayNotification('Not enough currency to play!', 'error');
-      return;
+  socket.on('visit_decline', ({ token, fromUsername }) => {
+    const username = getUsername(token);
+    fromUsername = (fromUsername || '').trim().toLowerCase();
+    if (!username) return;
+    for (const [sid, p] of Object.entries(players)) {
+      if (p.username === fromUsername) {
+        io.to(sid).emit('visit_declined', { by: username });
+        return;
+      }
     }
+  });
 
-    this.currency.deductCurrency(playerId, bet, 'memory-match-bet');
+  socket.on('tag_join', ({ token }) => {
+    const username = getUsername(token);
+    if (!username) return;
+    if (!tagGame.active) return socket.emit('tag_error', 'No game in progress. Start one!');
+    tagGame.participants.add(socket.id);
+    broadcastTagState();
+  });
 
-    const emojis = ['🍎', '🍌', '🍒', '🍇', '🍎', '🍌', '🍒', '🍇'];
-    const shuffled = emojis.sort(() => Math.random() - 0.5);
+  socket.on('tag_start', ({ token }) => {
+    const username = getUsername(token);
+    if (!username || !players[socket.id]) return socket.emit('tag_error', 'You must be in the world to start a game');
+    if (tagGame.active) return socket.emit('tag_error', 'A game is already in progress');
+    tagGame.active = true;
+    tagGame.itSocketId = socket.id;
+    tagGame.startedAt = Date.now();
+    tagGame.participants = new Set([socket.id]);
+    io.emit('tag_announce', `🎯 Tag started! ${username} is IT — run!`);
+    broadcastTagState();
+    tagGame.timer = setTimeout(() => endTagGame('Time ran out!'), tagGame.duration);
+  });
 
-    const modal = this.createGameModal('🧠 Memory Match', `
-      <div style="padding: 20px;">
-        <p style="text-align: center; margin-bottom: 20px;">Find matching pairs!</p>
-        <div class="memory-grid" id="memory-grid">
-          ${shuffled.map((_, i) => `
-            <button class="memory-card" data-index="${i}" data-emoji="${shuffled[i]}">?</button>
-          `).join('')}
-        </div>
-        <div id="memory-result" class="result-display"></div>
-      </div>
-    `);
+  socket.on('tag_tag', ({ token, targetUsername }) => {
+    const username = getUsername(token);
+    if (!username || !tagGame.active) return;
+    if (tagGame.itSocketId !== socket.id) return socket.emit('tag_error', "You're not IT");
+    const targetSid = Object.entries(players).find(([sid, p]) => p.username === targetUsername.trim().toLowerCase())?.[0];
+    if (!targetSid) return socket.emit('tag_error', 'Player not found');
+    if (!tagGame.participants.has(targetSid)) return socket.emit('tag_error', 'That player is not in the game');
+    tagGame.itSocketId = targetSid;
+    tagGame.participants.add(targetSid);
+    io.emit('tag_announce', `🎯 ${players[targetSid].username} is now IT!`);
+    broadcastTagState();
+  });
 
-    window.miniGames.memoryState = {
-      flipped: [],
-      matched: 0,
-      shuffled: shuffled,
-      bet: bet,
-      playerId: playerId,
-      disabled: false
-    };
-
-    const cards = modal.querySelectorAll('.memory-card');
-    cards.forEach(card => {
-      card.addEventListener('click', () => window.miniGames.handleMemoryClick(card));
-    });
-  }
-
-  handleMemoryClick(card) {
-    const state = this.memoryState;
-
-    if (state.disabled || state.flipped.includes(card) || card.classList.contains('matched')) {
-      return;
+  socket.on('tag_stop', ({ token }) => {
+    const username = getUsername(token);
+    if (!username) return;
+    if (tagGame.itSocketId === socket.id || users[username]?.admin || users[username]?.mod) {
+      endTagGame('Game stopped.');
     }
+  });
 
-    card.textContent = card.dataset.emoji;
-    card.style.background = '#4CAF50';
-    state.flipped.push(card);
+  socket.on('disconnect', () => {
+    if (players[socket.id]) { socket.broadcast.emit('player_left', { id: socket.id }); delete players[socket.id]; }
+    if (tagGame.active && tagGame.itSocketId === socket.id) endTagGame('The tagger left the game.');
+    tagGame.participants.delete(socket.id);
+  });
+});
 
-    if (state.flipped.length === 2) {
-      state.disabled = true;
-
-      setTimeout(() => {
-        const [card1, card2] = state.flipped;
-
-        if (card1.dataset.emoji === card2.dataset.emoji) {
-          card1.classList.add('matched');
-          card2.classList.add('matched');
-          state.matched++;
-
-          if (state.matched === 4) {
-            const reward = state.bet * 2.5;
-            this.currency.addCurrency(state.playerId, reward, 'memory-match-win');
-            const resultDiv = document.getElementById('memory-result');
-            resultDiv.innerHTML = `✅ You matched all pairs!<br>+${Math.floor(reward)} ${this.currency.currencySymbol}`;
-            resultDiv.style.color = '#4CAF50';
-
-            setTimeout(() => {
-              const overlay = document.querySelector('.modal-overlay');
-              if (overlay) overlay.click();
-            }, 2000);
-          }
-        } else {
-          card1.textContent = '?';
-          card2.textContent = '?';
-          card1.style.background = '#667eea';
-          card2.style.background = '#667eea';
-        }
-
-        state.flipped = [];
-        state.disabled = false;
-      }, 600);
-    }
-  }
-
-  // Game 4: Tap Speed
-  playTapSpeed(playerId) {
-    const bet = 10;
-    if (this.currency.getBalance(playerId) < bet) {
-      this.currency.displayNotification('Not enough currency to play!', 'error');
-      return;
-    }
-
-    this.currency.deductCurrency(playerId, bet, 'tap-speed-bet');
-
-    const modal = this.createGameModal('⚡ Tap Speed', `
-      <div style="text-align: center; padding: 20px;">
-        <p style="margin-bottom: 20px;">Click as fast as you can for 5 seconds!</p>
-        <button class="tap-button" id="tap-button" onclick="window.miniGames.handleTapClick()">
-          🎯 TAP ME!
-        </button>
-        <div id="tap-counter" style="font-size: 24px; font-weight: bold; margin: 20px 0;">Taps: 0</div>
-        <div id="tap-result" class="result-display"></div>
-      </div>
-    `);
-
-    window.miniGames.tapState = {
-      taps: 0,
-      active: true,
-      bet: bet,
-      playerId: playerId
-    };
-
-    setTimeout(() => {
-      window.miniGames.endTapGame();
-    }, 5000);
-  }
-
-  handleTapClick() {
-    if (this.tapState && this.tapState.active) {
-      this.tapState.taps++;
-      document.getElementById('tap-counter').textContent = `Taps: ${this.tapState.taps}`;
-    }
-  }
-
-  endTapGame() {
-    if (!this.tapState) return;
-
-    this.tapState.active = false;
-    const tapButton = document.getElementById('tap-button');
-    if (tapButton) {
-      tapButton.disabled = true;
-    }
-
-    const reward = Math.floor(this.tapState.bet * (1 + this.tapState.taps / 50));
-    this.currency.addCurrency(this.tapState.playerId, reward, 'tap-speed-win');
-
-    const resultDiv = document.getElementById('tap-result');
-    resultDiv.innerHTML = `✅ Final Score: ${this.tapState.taps} taps!<br>+${reward} ${this.currency.currencySymbol}`;
-    resultDiv.style.color = '#4CAF50';
-
-    setTimeout(() => {
-      const overlay = document.querySelector('.modal-overlay');
-      if (overlay) overlay.click();
-    }, 2500);
-  }
-
-  // Game 5: Color Match
-  playColorMatch(playerId) {
-    const bet = 12;
-    if (this.currency.getBalance(playerId) < bet) {
-      this.currency.displayNotification('Not enough currency to play!', 'error');
-      return;
-    }
-
-    this.currency.deductCurrency(playerId, bet, 'color-match-bet');
-
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-    const colorCodes = {
-      red: '#f44336',
-      blue: '#2196F3',
-      green: '#4CAF50',
-      yellow: '#FFC107',
-      purple: '#9C27B0',
-      orange: '#FF9800'
-    };
-
-    const colorNames = colors.sort(() => Math.random() - 0.5);
-    const targetColor = colorNames[0];
-
-    const modal = this.createGameModal('🎨 Color Match', `
-      <div style="padding: 20px; text-align: center;">
-        <p style="margin-bottom: 20px; font-size: 16px;">Click the button that matches this color:</p>
-        <div style="width: 100px; height: 100px; background: ${colorCodes[targetColor]}; margin: 20px auto; border-radius: 8px;"></div>
-        <div id="color-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; max-width: 300px; margin-left: auto; margin-right: auto;">
-          ${colorNames.map((color, idx) => `
-            <button style="padding: 20px; background: ${colorCodes[color]}; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white;" 
-              onclick="window.miniGames.checkColorMatch('${playerId}', '${color}', '${targetColor}', ${bet})">
-              ${color}
-            </button>
-          `).join('')}
-        </div>
-        <div id="color-result" class="result-display"></div>
-      </div>
-    `);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Red Park running on port ${PORT}`));
