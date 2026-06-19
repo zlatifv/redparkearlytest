@@ -1,563 +1,1926 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red Park - Game with Currency</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        /* Header */
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .header h1 {
-            color: #667eea;
-            font-size: 28px;
-        }
-
-        .player-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .balance-display {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            min-width: 120px;
-            text-align: center;
-        }
-
-        .admin-btn, .stats-btn {
-            background: #FF6B6B;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .admin-btn:hover, .stats-btn:hover {
-            background: #FF5252;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Main Content */
-        .main-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .game-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .game-card h2 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 20px;
-        }
-
-        .game-card p {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        .game-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-        .game-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .game-btn:active {
-            transform: scale(0.98);
-        }
-
-        .bet-info {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 12px;
-            color: #333;
-        }
-
-        /* Modals */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            padding: 20px;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 24px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            color: #999;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
-        /* Admin Panel */
-        .admin-panel {
-            display: grid;
-            gap: 15px;
-        }
-
-        .admin-form-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .admin-form-group input, .admin-form-group select {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .admin-form-group input:focus, .admin-form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .admin-form-group button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .admin-form-group button:hover {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-
-        .admin-stats {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .admin-stats h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .player-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .player-item {
-            background: white;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 4px solid #667eea;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .player-item button {
-            background: #FF6B6B;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .player-item button:hover {
-            background: #FF5252;
-        }
-
-        /* Stats Panel */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-card .label {
-            font-size: 12px;
-            opacity: 0.9;
-            margin-bottom: 5px;
-        }
-
-        .stat-card .value {
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            animation: slideInRight 0.3s ease;
-            z-index: 10001;
-            max-width: 300px;
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .notification.success {
-            background: #4CAF50;
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        .notification.info {
-            background: #2196F3;
-        }
-
-        .notification.warning {
-            background: #FF9800;
-        }
-
-        /* Game Specific Styles */
-        .flip-container {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .flip-btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .flip-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .result-display {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f0f0f0;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            min-height: 40px;
-        }
-
-        .memory-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            max-width: 300px;
-            margin: 20px auto;
-        }
-
-        .memory-card {
-            aspect-ratio: 1;
-            padding: 10px;
-            font-size: 24px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .memory-card:hover:not(.matched) {
-            transform: scale(1.05);
-        }
-
-        .memory-card.matched {
-            opacity: 0.3;
-        }
-
-        .tap-button {
-            padding: 40px 80px;
-            font-size: 24px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: all 0.1s ease;
-            margin: 20px 0;
-        }
-
-        .tap-button:hover:not(:disabled) {
-            transform: scale(1.05);
-        }
-
-        .tap-button:active:not(:disabled) {
-            transform: scale(0.95);
-        }
-
-        .tap-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .number-input-container {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .number-input-container input {
-            padding: 10px;
-            border: 2px solid #667eea;
-            border-radius: 6px;
-            font-size: 16px;
-            width: 100px;
-        }
-
-        .number-input-container button {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .password-prompt {
-            margin-bottom: 20px;
-        }
-
-        .password-prompt input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .password-prompt button {
-            width: 100%;
-            padding: 10px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-            }
-
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-
-            .modal {
-                padding: 20px;
-                max-width: 90vw;
-            }
-
-            .tap-button {
-                padding: 30px 60px;
-                font-size: 20px;
-            }
-
-            .memory-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .flip-container {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .flip-btn {
-                width: 100%;
-            }
-        }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1a0000"/>
+<meta name="format-detection" content="telephone=no"/>
+<title>Red Park</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html{height:100%;overflow:hidden;position:fixed;width:100%}
+body{background:#1a0808;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;height:100%;width:100%;position:fixed;top:0;left:0;touch-action:none;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
+canvas{display:block;touch-action:none;outline:none}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:linear-gradient(180deg,#1a0000 0%,#4a0808 40%,#8b1a1a 70%,#6b1010 100%);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;overflow:hidden;height:100%;width:100%}
+#loading-stars{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+.load-title{font-size:52px;font-weight:900;color:#fff;text-shadow:0 2px 20px rgba(255,80,80,.6);letter-spacing:-1px;position:relative;z-index:1}
+.load-sub{color:rgba(255,200,200,.8);font-size:15px;letter-spacing:2px;position:relative;z-index:1}
+.load-bar-wrap{width:260px;height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;position:relative;z-index:1}
+.load-bar{height:100%;background:linear-gradient(90deg,#ff4444,#ff8888);border-radius:3px;width:0%;transition:width .3s}
+.load-tip{color:rgba(255,180,180,.7);font-size:12px;margin-top:4px;position:relative;z-index:1}
+
+/* START SCREEN */
+#start-screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#1a0000 0%,#5a0a0a 50%,#2d0d0d 100%);height:100%;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#start-screen.hidden{display:none}
+.start-inner{display:flex;flex-direction:column;align-items:center;gap:0}
+.game-logo{font-size:58px;font-weight:900;color:#fff;text-shadow:0 4px 30px rgba(200,0,0,.6),0 2px 0 rgba(0,0,0,.3);letter-spacing:-2px;margin-bottom:4px;animation:logobounce 2.5s ease-in-out infinite}
+@keyframes logobounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.game-sub{color:rgba(255,200,200,.85);font-size:13px;letter-spacing:3px;margin-bottom:32px}
+.auth-card{background:rgba(255,255,255,.08);backdrop-filter:blur(20px);border:1px solid rgba(255,100,100,.2);border-radius:24px;padding:32px;width:min(340px,90vw)}
+.auth-tabs{display:flex;border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25);margin-bottom:24px}
+.auth-tab{flex:1;padding:10px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.auth-tab.active{background:rgba(200,50,50,.3);color:#fff}
+.auth-input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,100,100,.2);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;margin-bottom:12px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.auth-input:focus{border-color:rgba(255,100,100,.7)}
+.auth-input::placeholder{color:rgba(255,255,255,.35)}
+.auth-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;letter-spacing:.5px;transition:all .2s;box-shadow:0 4px 20px rgba(220,38,38,.35);-webkit-appearance:none;appearance:none;min-height:52px}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 25px rgba(220,38,38,.5)}
+.auth-err{color:#fca5a5;font-size:12px;text-align:center;min-height:18px;margin-top:8px}
+
+/* GAME */
+#game-wrap{position:fixed;inset:0;display:none}
+
+/* CROSSHAIR - desktop only */
+.crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:20}
+.crosshair::before,.crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.9);border-radius:1px}
+.crosshair::before{width:2px;height:18px;left:50%;transform:translateX(-50%) translateY(-50%)}
+.crosshair::after{width:18px;height:2px;top:50%;transform:translateY(-50%)}
+@media(max-width:768px){.crosshair{display:none}.desktop-only{display:none!important}}
+
+/* WRIST BUTTON */
+#wrist-btn{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:20px;width:64px;height:64px;border-radius:50%;background:rgba(220,38,38,.9);border:3px solid rgba(255,255,255,.3);color:#fff;font-size:28px;cursor:pointer;z-index:50;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:all .2s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#wrist-btn:active{transform:scale(.92)}
+#wrist-btn.open{background:rgba(239,68,68,.9);transform:rotate(45deg)}
+
+/* WRIST MENU */
+#wrist-menu{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));right:16px;width:min(320px,92vw);background:rgba(20,5,5,.97);border:1px solid rgba(255,100,100,.15);border-radius:24px;padding:20px;z-index:49;display:none;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);box-shadow:0 20px 60px rgba(0,0,0,.7);transform-origin:bottom right}
+#wrist-menu.open{display:block;animation:wristIn .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes wristIn{from{opacity:0;transform:scale(.7) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.wrist-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.wrist-title{font-size:15px;font-weight:800;color:#fff}
+.wrist-username{font-size:12px;color:#f87171;font-weight:600}
+.wrist-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.wrist-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,100,100,.1);border-radius:16px;padding:14px 12px;cursor:pointer;transition:all .2s;text-align:center}
+.wrist-item:hover,.wrist-item:active{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.4)}
+.wrist-item-icon{font-size:26px;margin-bottom:6px}
+.wrist-item-label{font-size:12px;font-weight:600;color:rgba(255,255,255,.8)}
+.wrist-item-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.wrist-logout{width:100%;padding:10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.wrist-logout:hover{background:rgba(239,68,68,.25)}
+
+/* PANELS */
+.panel{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center}
+.panel.open{display:flex}
+.panel-bg{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
+.panel-box{position:relative;background:#1a0505;border:1px solid rgba(255,100,100,.12);border-radius:24px;padding:24px;width:min(420px,95vw);max-height:85svh;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:1;animation:panelIn .2s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.panel-head-title{font-size:18px;font-weight:800}
+.panel-close{background:rgba(255,255,255,.08);border:none;color:#9ca3af;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.panel-close:hover{background:rgba(239,68,68,.2);color:#f87171}
+
+/* FRIEND PANEL */
+.add-row{display:flex;gap:8px;margin-bottom:16px}
+.add-row input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,100,100,.15);border-radius:12px;padding:10px 14px;color:#fff;font-size:13px;outline:none}
+.add-row input:focus{border-color:#f87171}
+.add-row button{background:#991b1b;border:none;color:#fff;border-radius:12px;padding:10px 16px;cursor:pointer;font-weight:700;font-size:13px}
+.sec-label{font-size:11px;font-weight:700;color:#6b3030;letter-spacing:1px;text-transform:uppercase;margin:14px 0 8px}
+.f-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:7px;border:1px solid rgba(255,100,100,.06)}
+.f-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.f-info{flex:1}
+.f-name{font-size:13px;font-weight:600}
+.f-status{font-size:11px;color:#6b7280}
+.f-status.on{color:#f87171}
+.f-btns{display:flex;gap:6px}
+.sb{padding:5px 10px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer}
+.sb-g{background:rgba(220,38,38,.2);color:#f87171}
+.sb-r{background:rgba(239,68,68,.15);color:#f87171}
+.sb-b{background:rgba(96,165,250,.15);color:#60a5fa}
+
+/* ADMIN PANEL */
+.admin-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:6px}
+.admin-name{font-size:13px;font-weight:700}
+.badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:4px}
+.badge-a{background:#f59e0b;color:#000}
+.badge-b{background:#ef4444;color:#fff}
+.badge-o{background:#10b981;color:#fff}
+.admin-btns{display:flex;gap:4px;flex-wrap:wrap}
+
+/* SETTINGS */
+.setting-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.setting-row label{min-width:130px;font-size:13px;color:#9ca3af}
+.setting-row input[type=range]{flex:1;accent-color:#dc2626}
+.setting-row span{font-size:13px;min-width:32px;text-align:right}
+
+/* GAMES PANEL */
+.game-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,100,100,.1);border-radius:16px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.game-card:hover{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.3)}
+.game-card-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.game-card-desc{font-size:12px;color:#6b7280}
+.game-badge{display:inline-block;background:rgba(220,38,38,.2);color:#f87171;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:8px}
+
+/* CHAT */
+#chat-wrap{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;width:min(300px,70vw);z-index:30;pointer-events:none}
+#chat-msgs{max-height:160px;overflow:hidden;display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.cmsg{background:rgba(0,0,0,.65);border-radius:8px;padding:5px 10px;font-size:12px;border-left:2px solid transparent;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.cmsg-name{font-weight:700;margin-right:4px}
+.cmsg-admin{background:#f59e0b;color:#000;font-size:9px;font-weight:800;padding:1px 4px;border-radius:3px;margin-right:3px}
+#chat-input-row{display:flex;gap:6px;pointer-events:auto}
+#chat-input{flex:1;background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px 12px;color:#fff;font-size:16px;outline:none;display:none;-webkit-appearance:none;appearance:none}
+#chat-input.open{display:block}
+#chat-send{background:#dc2626;border:none;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;display:none;min-width:44px;min-height:44px}
+#chat-send.open{display:block}
+
+/* MOBILE JOYSTICK */
+#joy-wrap{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:20px;z-index:40;display:none}
+@media(max-width:768px),(pointer:coarse){#joy-wrap{display:block}#wrist-btn{bottom:calc(20px + env(safe-area-inset-bottom));right:16px}}
+#joy-outer{width:130px;height:130px;border-radius:50%;background:rgba(220,38,38,.18);border:2.5px solid rgba(220,38,38,.45);position:relative;touch-action:none;box-shadow:0 0 24px rgba(220,38,38,.18)}
+#joy-inner{width:54px;height:54px;border-radius:50%;background:rgba(220,38,38,.55);border:2px solid rgba(255,150,150,.7);position:absolute;top:38px;left:38px;transition:none;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+
+/* MOBILE LOOK AREA */
+#look-zone{position:fixed;top:0;right:0;width:55%;height:100%;z-index:15;touch-action:none;display:none}
+@media(max-width:768px){#look-zone{display:block}}
+
+/* MOBILE ACTION BTNS */
+#mobile-actions{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));right:96px;display:none;flex-direction:column;gap:12px;z-index:40}
+@media(max-width:768px),(pointer:coarse){#mobile-actions{display:flex}}
+.mob-act{width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,255,255,.25);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 10px rgba(0,0,0,.4);transition:transform .1s;-webkit-tap-highlight-color:transparent}
+.mob-act:active{transform:scale(.88)}
+#mob-jump{background:rgba(220,38,38,.6)}
+#mob-sprint{background:rgba(251,146,60,.55)}
+#mob-chat{background:rgba(59,130,246,.5)}
+
+/* HOTEL ROOM MENU */
+#hotel-menu{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center}
+#hotel-menu.open{display:flex}
+#hotel-menu .panel-bg{position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.hotel-box{position:relative;background:linear-gradient(180deg,#200808,#150303);border:1px solid rgba(255,80,80,.2);border-radius:28px;padding:28px 24px;width:min(400px,95vw);max-height:88svh;overflow-y:auto;z-index:1;animation:panelIn .25s ease}
+.hotel-title{font-size:22px;font-weight:900;text-align:center;margin-bottom:4px;color:#fff}
+.hotel-sub{font-size:12px;color:#f87171;text-align:center;letter-spacing:2px;margin-bottom:24px}
+.hotel-close{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.08);border:none;color:#9ca3af;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.hotel-floors{display:flex;flex-direction:column;gap:12px}
+.hotel-floor{background:rgba(255,255,255,.04);border:1px solid rgba(255,80,80,.1);border-radius:16px;overflow:hidden}
+.hotel-floor-label{padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;color:#f87171;background:rgba(255,40,40,.08);border-bottom:1px solid rgba(255,80,80,.08)}
+.hotel-rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.hotel-room{background:rgba(255,255,255,.05);border:1px solid rgba(255,100,100,.12);border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .18s;min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.hotel-room:active{transform:scale(.94)}
+.hotel-room.occupied{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.35)}
+.hotel-room.mine{background:rgba(255,180,0,.1);border-color:rgba(255,180,0,.4)}
+.hotel-room.empty{opacity:.55}
+.hotel-room-num{font-size:10px;color:#6b7280;font-weight:700}
+.hotel-room-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin:0 auto}
+.hotel-room-name{font-size:10px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px}
+.hotel-visit-btn{width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#dc2626,#7f1d1d);border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px}
+
+/* PROXIMITY INDICATOR */
+#hotel-hint{position:fixed;top:50%;left:50%;transform:translate(-50%,60px);background:rgba(220,38,38,.9);border:1px solid rgba(255,100,100,.4);border-radius:20px;padding:8px 18px;font-size:13px;font-weight:700;color:#fff;z-index:25;display:none;white-space:nowrap;pointer-events:none;animation:hintPulse 1.5s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:.85}50%{opacity:1;transform:translate(-50%,60px) scale(1.04)}}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:8}
+.plabel{position:absolute;transform:translate(-50%,-100%);background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+
+/* HUD TOP */
+#hud-top{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 16px;font-size:12px;color:#9ca3af;z-index:20;white-space:nowrap}
+
+/* NOTIF */
+#notif-area{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:280px}
+.notif{background:rgba(15,31,15,.97);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 16px;animation:nIn .3s ease;font-size:13px}
+@keyframes nIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.notif-title{font-weight:700;margin-bottom:2px;font-size:13px}
+.notif-body{color:#9ca3af;font-size:12px}
+.notif-btns{display:flex;gap:8px;margin-top:8px}
+
+/* MINIMAP */
+#minimap{position:fixed;top:50px;right:14px;width:110px;height:110px;border-radius:14px;border:1px solid rgba(255,255,255,.12);overflow:hidden;z-index:20;background:rgba(0,0,0,.5);box-shadow:0 4px 16px rgba(0,0,0,.5)}
+#minimap canvas{width:100%;height:100%}
+#minimap-label{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,150,150,.7);font-weight:700;letter-spacing:1px;pointer-events:none;z-index:1}
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🎮 Red Park</h1>
-            <div class="player-info">
-                <div class="balance-display" data-balance-display>🪙 500</div>
-                <button class="stats-btn" id="stats-btn">📊 Stats</button>
-                <button class="admin-btn" id="admin-btn">⚙️ Admin</button>
-            </div>
-        </div>
 
-        <!-- Main Content -->
-        <div class="main-content" id="games-container">
-            <!-- Games will be generated here -->
-        </div>
+<!-- LOADING -->
+<div id="loading">
+  <canvas id="loading-stars"></canvas>
+  <div class="load-title">Red Park</div>
+  <div class="load-sub">OPEN WORLD HANGOUT</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+  <div class="load-tip" id="load-tip">Loading world…</div>
+</div>
+
+<!-- START SCREEN -->
+<div id="start-screen" class="hidden">
+  <div class="start-inner">
+    <div class="game-logo">Red Park</div>
+    <div class="game-sub">OPEN WORLD HANGOUT</div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchTab('register')">Register</button>
+      </div>
+      <div id="login-f">
+        <input class="auth-input" id="lu" placeholder="Username" autocomplete="username"/>
+        <input class="auth-input" id="lp" placeholder="Password" type="password" autocomplete="current-password"/>
+        <button class="auth-btn" onclick="doLogin()">Enter Red Park</button>
+      </div>
+      <div id="reg-f" style="display:none">
+        <input class="auth-input" id="ru" placeholder="Username (min 3)" autocomplete="username"/>
+        <input class="auth-input" id="rp" placeholder="Password" type="password" autocomplete="new-password"/>
+        <button class="auth-btn" onclick="doRegister()">Create Account</button>
+      </div>
+      <div class="auth-err" id="auth-err"></div>
     </div>
+  </div>
+</div>
 
-    <script src="index.js"></script>
+<!-- GAME -->
+<div id="game-wrap">
+  <canvas id="c"></canvas>
+
+  <!-- HUD -->
+  <div id="hud-top">Red Park &nbsp;|&nbsp; <span id="pc">1 player</span> &nbsp;|&nbsp; <span class="desktop-only">WASD move · Mouse look · T chat · </span>Press ☰ for menu</div>
+
+  <!-- Tag game HUD -->
+  <div id="tag-hud" style="display:none;position:fixed;top:54px;left:50%;transform:translateX(-50%);padding:6px 16px;border-radius:14px;font-size:12px;font-weight:700;color:#fff;z-index:21;white-space:nowrap"></div>
+
+  <!-- Crosshair desktop -->
+  <div class="crosshair desktop-only"></div>
+
+  <!-- Minimap -->
+  <div id="minimap" style="position:relative"><canvas id="mmc" width="110" height="110"></canvas><div id="minimap-label">MAP</div></div>
+
+  <!-- Chat -->
+  <div id="chat-wrap">
+    <div id="chat-msgs"></div>
+    <div id="chat-input-row">
+      <input id="chat-input" placeholder="Say something…" maxlength="200"/>
+      <button id="chat-send" onclick="sendChat()">▶</button>
+    </div>
+  </div>
+
+  <!-- Mobile joystick -->
+  <div id="joy-wrap">
+    <div id="joy-outer"><div id="joy-inner"></div></div>
+  </div>
+
+  <!-- Mobile look zone -->
+  <div id="look-zone"></div>
+
+  <!-- Mobile action buttons -->
+  <div id="mobile-actions">
+    <div class="mob-act" id="mob-jump" ontouchstart="doJump()" onclick="doJump()">⬆</div>
+    <div class="mob-act" id="mob-sprint" ontouchstart="startSprint()" ontouchend="stopSprint()" onmousedown="startSprint()" onmouseup="stopSprint()">⚡</div>
+    <div class="mob-act" id="mob-chat" onclick="openChatMobile()">💬</div>
+  </div>
+
+  <!-- Red Residences Menu -->
+  <div id="hotel-menu">
+    <div class="panel-bg" onclick="closeHotelMenu()"></div>
+    <div class="hotel-box">
+      <button class="hotel-close" onclick="closeHotelMenu()">✕</button>
+      <div class="hotel-title">Red Residences</div>
+      <div class="hotel-sub">SEND A HOME VISIT REQUEST</div>
+      <div class="hotel-floors" id="hotel-floors"></div>
+      <button class="hotel-visit-btn" onclick="visitMyRoom()">🏠 Go to My Apartment</button>
+    </div>
+  </div>
+
+  <!-- Residences proximity hint -->
+  <div id="hotel-hint">🏢 Red Residences — Tap to enter</div>
+
+  <!-- Labels -->
+  <div id="labels"></div>
+  <div id="notif-area"></div>
+
+  <!-- Wrist button -->
+  <button id="wrist-btn" onclick="toggleWrist()">☰</button>
+
+  <!-- Wrist menu -->
+  <div id="wrist-menu">
+    <div class="wrist-header">
+      <div class="wrist-title">Red Park</div>
+      <div class="wrist-username" id="wrist-uname"></div>
+    </div>
+    <div class="wrist-grid">
+      <div class="wrist-item" onclick="openPanel('friends-panel');closeWrist()">
+        <div class="wrist-item-icon">👥</div>
+        <div class="wrist-item-label">Friends</div>
+        <div class="wrist-item-sub" id="friends-count">0 friends</div>
+      </div>
+      <div class="wrist-item" onclick="openHotelMenu();closeWrist()">
+        <div class="wrist-item-icon">🏢</div>
+        <div class="wrist-item-label">Residences</div>
+        <div class="wrist-item-sub">Visit homes</div>
+      </div>
+      <div class="wrist-item" onclick="openPanel('games-panel');closeWrist()">
+        <div class="wrist-item-icon">🎮</div>
+        <div class="wrist-item-label">Games</div>
+        <div class="wrist-item-sub">Mini-games</div>
+      </div>
+      <div class="wrist-item" onclick="openPanel('settings-panel');closeWrist()">
+        <div class="wrist-item-icon">⚙️</div>
+        <div class="wrist-item-label">Settings</div>
+        <div class="wrist-item-sub">Controls & more</div>
+      </div>
+      <div class="wrist-item" id="admin-wrist-item" onclick="openPanel('admin-panel');closeWrist()" style="display:none">
+        <div class="wrist-item-icon">🛡️</div>
+        <div class="wrist-item-label">Admin</div>
+        <div class="wrist-item-sub">Manage users</div>
+      </div>
+      <div class="wrist-item" onclick="openChatMobile();closeWrist()">
+        <div class="wrist-item-icon">💬</div>
+        <div class="wrist-item-label">Chat</div>
+        <div class="wrist-item-sub">Talk to players</div>
+      </div>
+      <div class="wrist-item" onclick="openPanel('profile-panel');closeWrist()">
+        <div class="wrist-item-icon">👤</div>
+        <div class="wrist-item-label">Profile</div>
+        <div class="wrist-item-sub">Your account</div>
+      </div>
+    </div>
+    <button class="wrist-logout" onclick="doLogout()">🚪 Leave Red Park</button>
+  </div>
+</div>
+
+<!-- PANELS -->
+<!-- Friends -->
+<div class="panel" id="friends-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box">
+    <div class="panel-head"><div class="panel-head-title">👥 Friends</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div class="add-row">
+      <input id="add-f-inp" placeholder="Username to add…"/>
+      <button onclick="sendFriendReq()">Add</button>
+    </div>
+    <div id="freq-sec" style="display:none"><div class="sec-label">Requests</div><div id="freq-list"></div></div>
+    <div class="sec-label">My Friends</div>
+    <div id="friends-list"></div>
+  </div>
+</div>
+
+<!-- Games -->
+<div class="panel" id="games-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box">
+    <div class="panel-head"><div class="panel-head-title">🎮 Games</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div class="game-card" onclick="openTagPanel()"><div class="game-card-title">🎯 Tag<span class="game-badge" style="background:rgba(74,222,128,.2);color:#4ade80">LIVE</span></div><div class="game-card-desc">Chase and tag other players before time runs out</div></div>
+    <div class="game-card"><div class="game-card-title">🏀 Basketball<span class="game-badge">SOON</span></div><div class="game-card-desc">Shoot hoops at the Red Park court</div></div>
+    <div class="game-card"><div class="game-card-title">🏃 Hide & Seek<span class="game-badge">SOON</span></div><div class="game-card-desc">Find or hide from other players in the forest</div></div>
+    <div class="game-card"><div class="game-card-title">🏆 Race<span class="game-badge">SOON</span></div><div class="game-card-desc">First one to the finish line through the forest wins</div></div>
+    <div style="text-align:center;color:#6b7280;font-size:12px;margin-top:8px">More games coming soon!</div>
+  </div>
+</div>
+
+<!-- Tag Game -->
+<div class="panel" id="tag-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box">
+    <div class="panel-head"><div class="panel-head-title">🎯 Tag</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div id="tag-idle-view">
+      <div style="text-align:center;color:#9ca3af;font-size:13px;margin-bottom:16px">No game running. Start one and everyone nearby can join in!</div>
+      <button class="auth-btn" onclick="socket.emit('tag_start',{token:token});closeAllPanels()">🎯 Start a Game</button>
+    </div>
+    <div id="tag-active-view" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:13px;color:#9ca3af">IT is</div>
+        <div id="tag-it-name" style="font-size:22px;font-weight:900;color:#f87171"></div>
+        <div id="tag-timer" style="font-size:13px;color:#6b7280;margin-top:4px"></div>
+      </div>
+      <div class="sec-label">Players in game</div>
+      <div id="tag-participants" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+      <button class="auth-btn" style="background:linear-gradient(135deg,#16a34a,#15803d);margin-bottom:8px" onclick="socket.emit('tag_join',{token:token});closeAllPanels();showNotif('🎯 Joined the game!','Find IT or run away!',null,2500)">Join Game</button>
+      <button class="wrist-logout" onclick="socket.emit('tag_stop',{token:token})">🛑 Stop Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="panel" id="settings-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box">
+    <div class="panel-head"><div class="panel-head-title">⚙️ Settings</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div class="setting-row"><label>Mouse Sensitivity</label><input type="range" min="0.3" max="4" step="0.1" value="1" oninput="sensitivity=+this.value;document.getElementById('sv').textContent=this.value;saveSettings()"><span id="sv">1</span></div>
+    <div class="setting-row"><label>Move Speed</label><input type="range" min="4" max="20" step="1" value="9" oninput="moveSpeed=+this.value;document.getElementById('spv').textContent=this.value;saveSettings()"><span id="spv">9</span></div>
+    <div class="setting-row"><label>Field of View</label><input type="range" min="60" max="120" step="1" value="75" oninput="camera&&(camera.fov=+this.value,camera.updateProjectionMatrix());document.getElementById('fv').textContent=this.value"><span id="fv">75</span></div>
+    <div class="setting-row"><label>Shadow Quality</label><input type="range" min="0" max="2" step="1" value="1" oninput="setShadows(+this.value)"><span>—</span></div>
+    <div style="border-top:1px solid rgba(255,255,255,.08);margin:16px 0 14px"></div>
+    <div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:12px">📱 Mobile / APK Mode</div>
+    <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;width:100%">
+        <label style="min-width:auto;flex:1">APK Performance Mode</label>
+        <div id="apk-toggle" onclick="toggleAPKMode()" style="width:48px;height:26px;border-radius:13px;background:#333;border:2px solid #555;cursor:pointer;position:relative;transition:all .2s">
+          <div id="apk-knob" style="width:20px;height:20px;border-radius:50%;background:#888;position:absolute;top:1px;left:1px;transition:all .2s"></div>
+        </div>
+      </div>
+      <div style="color:#6b7280;font-size:11px;line-height:1.6">Reduces render quality, disables shadows, enlarges joystick, boosts camera sensitivity — ideal for APK/WebView export.</div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.08);margin:14px 0 12px"></div>
+    <div style="color:#6b7280;font-size:12px;line-height:1.8">
+      Desktop: WASD move · Mouse look (click to lock) · Space jump · T chat · ESC unlock<br>
+      Mobile: Left joystick move · Right side drag look · ⬆ jump · 💬 chat · ☰ menu
+    </div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div class="panel" id="admin-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box" style="width:min(520px,95vw)">
+    <div class="panel-head"><div class="panel-head-title">🛡️ Admin Panel</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <input id="admin-t" placeholder="Target username…" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;outline:none;min-width:120px"/>
+    </div>
+    <input id="admin-reason" placeholder="Reason (for warnings)…" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px"/>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="sb sb-r" onclick="aa('kick')">Kick</button>
+      <button class="sb sb-r" onclick="aa('ban')">Ban</button>
+      <button class="sb sb-g" onclick="aa('unban')">Unban</button>
+      <button class="sb sb-b" onclick="aa('mute')">Mute</button>
+      <button class="sb sb-g" onclick="aa('unmute')">Unmute</button>
+      <button class="sb sb-r" onclick="aa('warn')">⚠️ Warn</button>
+    </div>
+    <div id="admin-only-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="sb sb-b" onclick="aa('makemod')">+Mod</button>
+      <button class="sb sb-b" onclick="aa('removemod')">-Mod</button>
+      <button class="sb sb-b" onclick="aa('makeadmin')">+Admin</button>
+      <button class="sb sb-b" onclick="aa('removeadmin')">-Admin</button>
+    </div>
+    <div id="admin-msg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>
+    <div class="sec-label">All Users</div>
+    <div id="admin-list"></div>
+  </div>
+</div>
+
+<!-- Profile -->
+<div class="panel" id="profile-panel">
+  <div class="panel-bg" onclick="closeAllPanels()"></div>
+  <div class="panel-box">
+    <div class="panel-head"><div class="panel-head-title">👤 Profile</div><button class="panel-close" onclick="closeAllPanels()">✕</button></div>
+    <div style="text-align:center;padding:20px 0">
+      <div id="profile-avatar" style="width:70px;height:70px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;border:3px solid rgba(255,255,255,.2)"></div>
+      <div id="profile-name" style="font-size:20px;font-weight:800;margin-bottom:4px"></div>
+      <div id="profile-role" style="font-size:12px;color:#6b7280;margin-bottom:20px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:12px"><div style="font-size:20px;font-weight:800" id="stat-friends">0</div><div style="font-size:11px;color:#6b7280">Friends</div></div>
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:12px"><div style="font-size:20px;font-weight:800" id="stat-online">1</div><div style="font-size:11px;color:#6b7280">Online</div></div>
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:12px"><div style="font-size:20px;font-weight:800">🟢</div><div style="font-size:11px;color:#6b7280">Status</div></div>
+      </div>
+      <button class="wrist-logout" onclick="doLogout();closeAllPanels()">🚪 Leave Red Park</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function loadLibs(){
+  var libs=[
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    'https://cdn.socket.io/4.7.5/socket.io.min.js'
+  ];
+  var bar=document.getElementById('load-bar');
+  var tips=['Setting the mood…','Connecting world…','Almost ready…'];
+  var tipEl=document.getElementById('load-tip');
+  function loadNext(i){
+    if(i>=libs.length){bar.style.width='100%';tipEl.textContent='Ready!';setTimeout(startApp,400);return;}
+    bar.style.width=(((i+1)/libs.length)*90)+'%';
+    tipEl.textContent=tips[i]||'Loading…';
+    var s=document.createElement('script');
+    s.src=libs[i];
+    s.onload=function(){loadNext(i+1);};
+    s.onerror=function(){tipEl.textContent='Retrying…';setTimeout(function(){loadNext(i+1);},1000);};
+    document.head.appendChild(s);
+  }
+  loadNext(0);
+})();
+
+var socket,token,myUsername,myColor,isAdmin,isMod,isMuted;
+var camera,renderer,scene;
+var yaw=0,pitch=0,sensitivity=1,moveSpeed=9;
+var keys={},velY=0,isLocked=false,chatOpen=false;
+var friendData={friends:[],requests:[]};
+var remotePlayers={};
+var animId;
+var joyActive=false,joyX=0,joyY=0;
+var lookTouchId=null,lastLookX=0,lastLookY=0;
+var jumpQueued=false;
+var isSprinting=false;
+var clock,t3=0;
+var orbMeshes=[];
+var treeMeshes=[];
+
+function startSprint(){isSprinting=true;}
+function stopSprint(){isSprinting=false;}
+
+// ==================== AUTH ====================
+function switchTab(t){
+  document.getElementById('login-f').style.display=t==='login'?'block':'none';
+  document.getElementById('reg-f').style.display=t==='register'?'block':'none';
+  document.querySelectorAll('.auth-tab').forEach(function(b,i){b.classList.toggle('active',(t==='login'&&i===0)||(t==='register'&&i===1));});
+  document.getElementById('auth-err').textContent='';
+}
+function setErr(m){document.getElementById('auth-err').textContent=m;}
+function saveSession(token,username,color,admin){
+  try{
+    localStorage.setItem('rp_token',token);
+    localStorage.setItem('rp_username',username);
+    localStorage.setItem('rp_color',color);
+    localStorage.setItem('rp_admin',admin?'1':'0');
+  }catch(e){}
+}
+function loadSession(){
+  try{
+    var token=localStorage.getItem('rp_token');
+    var username=localStorage.getItem('rp_username');
+    var color=localStorage.getItem('rp_color');
+    var admin=localStorage.getItem('rp_admin')==='1';
+    if(!token||!username)return null;
+    return{token:token,username:username,color:color,admin:admin};
+  }catch(e){return null;}
+}
+function clearSession(){
+  try{
+    ['rp_token','rp_username','rp_color','rp_admin'].forEach(function(k){localStorage.removeItem(k);});
+  }catch(e){}
+}
+function saveSettings(){
+  try{
+    localStorage.setItem('rp_settings',JSON.stringify({
+      sensitivity:sensitivity,
+      moveSpeed:moveSpeed,
+      apkMode:apkMode
+    }));
+  }catch(e){}
+}
+function loadSettings(){
+  try{
+    var s=JSON.parse(localStorage.getItem('rp_settings')||'{}');
+    if(s.sensitivity){sensitivity=s.sensitivity;var el=document.querySelector('input[oninput*="sv"]');if(el){el.value=sensitivity;document.getElementById('sv').textContent=sensitivity;}}
+    if(s.moveSpeed){moveSpeed=s.moveSpeed;var el=document.querySelector('input[oninput*="spv"]');if(el){el.value=moveSpeed;document.getElementById('spv').textContent=moveSpeed;}}
+    if(s.apkMode)setTimeout(function(){if(s.apkMode)toggleAPKMode(true);},200);
+  }catch(e){}
+}
+
+var apkMode=false;
+function toggleAPKMode(forceOn){
+  if(typeof forceOn==='boolean')apkMode=!forceOn; // will be flipped below
+  apkMode=!apkMode;
+  var tog=document.getElementById('apk-toggle');
+  var knob=document.getElementById('apk-knob');
+  if(apkMode){
+    tog.style.background='#dc2626';tog.style.borderColor='#f87171';
+    knob.style.left='23px';knob.style.background='#fff';
+    // Apply APK optimizations
+    if(renderer){
+      renderer.setPixelRatio(1);
+      renderer.shadowMap.enabled=false;
+    }
+    if(camera){camera.fov=85;camera.updateProjectionMatrix();}
+    if(scene&&scene.fog)scene.fog.density=0.012;
+    // Bigger joystick
+    var jo=document.getElementById('joy-outer');
+    if(jo){jo.style.width='160px';jo.style.height='160px';}
+    var ji=document.getElementById('joy-inner');
+    if(ji){ji.style.width='64px';ji.style.height='64px';}
+    // Higher look sensitivity on mobile
+    sensitivity=Math.max(sensitivity,1.8);
+    showNotif('📱 APK Mode ON','Performance optimized for mobile',null,2500);
+  } else {
+    tog.style.background='#333';tog.style.borderColor='#555';
+    knob.style.left='1px';knob.style.background='#888';
+    // Restore
+    if(renderer){
+      renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+      renderer.shadowMap.enabled=true;
+    }
+    if(camera){camera.fov=75;camera.updateProjectionMatrix();}
+    if(scene&&scene.fog)scene.fog.density=0.016;
+    var jo=document.getElementById('joy-outer');
+    if(jo){jo.style.width='130px';jo.style.height='130px';}
+    var ji=document.getElementById('joy-inner');
+    if(ji){ji.style.width='54px';ji.style.height='54px';}
+    showNotif('APK Mode OFF','Standard quality restored',null,2000);
+  }
+  saveSettings();
+}
+function doLogin(){
+  var u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
+  if(!u||!p)return setErr('Fill all fields');
+  socket.emit('login',{username:u,password:p});
+}
+function doRegister(){
+  var u=document.getElementById('ru').value.trim(),p=document.getElementById('rp').value;
+  if(!u||!p)return setErr('Fill all fields');
+  socket.emit('register',{username:u,password:p});
+}
+
+// ==================== SOCKET ====================
+function initSocket(){
+  socket=io();
+  socket.on('connect_error',function(){setErr('Cannot reach server');});
+  socket.on('auth_error',function(m){setErr(m);clearSession();});
+  socket.on('auth_ok',function(d){token=d.token;myUsername=d.username;myColor=d.color;isAdmin=d.admin;isMod=d.mod;saveSession(d.token,d.username,d.color,d.admin,d.mod);enterWorld();});
+  socket.on('world_state',function(d){d.players.forEach(function(p){addRemote(p.id,p);});updateHUD();});
+  socket.on('player_joined',function(p){addRemote(p.id,p);updateHUD();showNotif('👤 '+p.username+' joined','',null,2000);});
+  socket.on('player_moved',function(d){var rp=remotePlayers[d.id];if(rp){rp.mesh.position.set(d.x,d.y+0.06,d.z);rp.mesh.rotation.y=d.rotY;if(rp.mesh.userData)rp.mesh.userData.anim=d.anim||'idle';}});
+  socket.on('player_left',function(d){var rp=remotePlayers[d.id];if(rp){scene.remove(rp.mesh);if(rp.lbl)rp.lbl.remove();delete remotePlayers[d.id];}updateHUD();});
+  socket.on('chat_msg',addChatMsg);
+  socket.on('friend_data',function(d){friendData=d;if(document.getElementById('friends-panel').classList.contains('open'))renderFriends();updateWristFriends();});
+  socket.on('friend_request_received',function(d){showNotif('🤝 Friend Request',d.from+' wants to be friends',[{l:'Accept',fn:function(){socket.emit('friend_accept',{token:token,fromUsername:d.from});}},{l:'Decline',cls:'sb-r',fn:function(){socket.emit('friend_decline',{token:token,fromUsername:d.from});}}]);});
+  socket.on('friend_accepted',function(d){showNotif('✅ Now friends with '+d.by,'','',2500);});
+  socket.on('friend_sent',function(u){showNotif('📨 Request sent to '+u,'','',2000);});
+  socket.on('friend_error',function(m){showNotif('⚠️ '+m,'','',2000);});
+  socket.on('admin_success',function(m){var e=document.getElementById('admin-msg');e.style.color='#4ade80';e.textContent=m;socket.emit('admin_list',{token:token});});
+  socket.on('admin_error',function(m){var e=document.getElementById('admin-msg');e.style.color='#f87171';e.textContent=m;});
+  socket.on('admin_list',renderAdminList);
+  socket.on('kick',function(m){alert(m);doLogout();});
+  socket.on('visit_error',function(m){showNotif('⚠️ '+m,'','',2500);});
+  socket.on('visit_request_received',function(d){
+    showNotif('🏠 Home Visit Request',d.from+' wants to visit your apartment',[
+      {l:'✓ Accept',fn:function(){socket.emit('visit_accept',{token:token,fromUsername:d.from});}},
+      {l:'✕ Decline',cls:'sb-r',fn:function(){socket.emit('visit_decline',{token:token,fromUsername:d.from});}}
+    ]);
+  });
+  socket.on('visit_teleport',function(d){
+    // Teleport me (the visitor) to the host
+    camera.position.set(d.x+(Math.random()-0.5)*2, d.y+2, d.z+(Math.random()-0.5)*2);
+    showNotif('🏠 Visiting '+d.toUsername,'You have been teleported!',null,2500);
+  });
+  socket.on('visit_guest_arriving',function(d){
+    showNotif('👤 '+d.fromUsername+' is on their way','They\'re visiting your apartment!',null,2500);
+  });
+  socket.on('visit_declined',function(d){
+    showNotif('❌ Visit declined',d.by+' declined your request',null,2500);
+  });
+  socket.on('account_status',function(d){
+    isMod=d.mod;isMuted=d.muted;
+    if(isMod)document.getElementById('admin-wrist-item').style.display='block';
+    if(isMuted)showNotif('🔇 You are muted','You cannot send chat messages',null,3500);
+  });
+  socket.on('you_muted',function(m){
+    isMuted=m;
+    showNotif(m?'🔇 You have been muted':'🔊 You have been unmuted','',null,3000);
+  });
+  socket.on('you_warned',function(d){
+    showNotif('⚠️ Warning from '+d.by,d.reason+' (Warning #'+d.count+')',null,5000);
+  });
+  socket.on('chat_blocked',function(m){
+    showNotif('🔇 Muted',m,null,2500);
+  });
+
+  // ---- TAG MINI-GAME ----
+  socket.on('tag_state',function(d){tagState=d;renderTagUI();});
+  socket.on('tag_announce',function(m){showNotif('🎯 Tag',m,null,3000);});
+  socket.on('tag_error',function(m){showNotif('⚠️ '+m,'','',2200);});
+  socket.on('tag_ended',function(d){
+    showNotif('🏁 Tag Over',d.reason+(d.lastIt?' Last IT: '+d.lastIt:''),null,4000);
+    tagState={active:false};renderTagUI();
+  });
+
+  // Auto-login from saved session
+  socket.on('connect',function(){
+    var s=loadSession();
+    if(s&&s.token&&s.username){
+      // Try to re-authenticate with saved token by sending a login attempt
+      // We store the last credentials attempt via token re-use approach
+      socket.emit('token_login',{token:s.token});
+    }
+  });
+  socket.on('token_invalid',function(){clearSession();});
+}
+
+// ==================== WORLD ====================
+function enterWorld(){
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('game-wrap').style.display='block';
+  if(isAdmin||isMod)document.getElementById('admin-wrist-item').style.display='block';
+  document.getElementById('wrist-uname').textContent=myUsername;
+  document.getElementById('profile-name').textContent=myUsername;
+  document.getElementById('profile-role').textContent=isAdmin?'🛡️ Admin':(isMod?'🟠 Moderator':'Explorer');
+  document.getElementById('profile-avatar').textContent=myUsername[0].toUpperCase();
+  document.getElementById('profile-avatar').style.background=myColor;
+  initThree();
+  loadSettings();
+  socket.emit('join_world',{token:token});
+}
+
+function initThree(){
+  var c=document.getElementById('c');
+  c.width=innerWidth;c.height=innerHeight;
+
+  scene=new THREE.Scene();
+
+  // RED PARK SKY - deep red/dusk atmosphere
+  scene.background=new THREE.Color(0x1a0505);
+  scene.fog=new THREE.FogExp2(0x3a0a0a,0.016);
+
+  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,300);
+  camera.position.set(0,2,8);
+  camera.rotation.order='YXZ';
+
+  var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1);
+  renderer=new THREE.WebGLRenderer({canvas:c,antialias:!isMobile,powerPreference:'high-performance'});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(isMobile?Math.min(devicePixelRatio,1.5):Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=!isMobile;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.1;
+
+  // Lighting - red park atmosphere
+  var amb=new THREE.AmbientLight(0xff3a1a,0.6);
+  scene.add(amb);
+  var sun=new THREE.DirectionalLight(0xff6020,1.8);
+  sun.position.set(60,120,40);
+  sun.castShadow=true;
+  sun.shadow.mapSize.width=2048;
+  sun.shadow.mapSize.height=2048;
+  sun.shadow.camera.near=0.5;
+  sun.shadow.camera.far=300;
+  sun.shadow.camera.left=-80;
+  sun.shadow.camera.right=80;
+  sun.shadow.camera.top=80;
+  sun.shadow.camera.bottom=-80;
+  sun.shadow.bias=-0.0005;
+  scene.add(sun);
+  var sky2=new THREE.DirectionalLight(0x800020,0.4);
+  sky2.position.set(-30,60,-20);
+  scene.add(sky2);
+
+
+
+  buildPark();
+  setupInput();
+  setupMobileControls();
+
+  clock=new THREE.Clock();
+
+  (function loop(){
+    animId=requestAnimationFrame(loop);
+    var dt=Math.min(clock.getDelta(),0.05);
+    t3+=dt;
+    handleMove(dt);
+    animScene(t3);
+    updateLabels();
+    drawMinimap();
+    checkHotelProximity();
+    if(tagState.active){
+      tagState.msLeft=Math.max(0,(tagState.msLeft||0)-dt*1000);
+      if(document.getElementById('tag-panel').classList.contains('open'))renderTagUI();
+      else showTagHud();
+    }
+    renderer.render(scene,camera);
+  })();
+
+  window.addEventListener('resize',function(){
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+    document.getElementById('c').width=innerWidth;
+    document.getElementById('c').height=innerHeight;
+  });
+}
+
+function buildPark(){
+  // Ground - dark reddish park ground
+  var groundGeo=new THREE.PlaneGeometry(300,300,60,60);
+  var pos=groundGeo.attributes.position;
+  for(var i=0;i<pos.count;i++){
+    var x=pos.getX(i),z=pos.getZ(i);
+    var h=Math.sin(x*0.05)*0.6+Math.cos(z*0.07)*0.5+Math.sin(x*0.12+z*0.09)*0.25;
+    pos.setY(i,h);
+  }
+  groundGeo.computeVertexNormals();
+  var groundMat=new THREE.MeshLambertMaterial({color:0x2a0808});
+  var ground=new THREE.Mesh(groundGeo,groundMat);
+  ground.rotation.x=-Math.PI/2;
+  ground.receiveShadow=true;
+  scene.add(ground);
+
+  // Park path - dark stone
+  var pathMat=new THREE.MeshLambertMaterial({color:0x3a1515});
+  var path=new THREE.Mesh(new THREE.PlaneGeometry(6,140),pathMat);
+  path.rotation.x=-Math.PI/2;
+  path.position.y=0.02;
+  scene.add(path);
+
+  // Cross path
+  var path2=new THREE.Mesh(new THREE.PlaneGeometry(140,6),pathMat);
+  path2.rotation.x=-Math.PI/2;
+  path2.position.y=0.02;
+  scene.add(path2);
+
+  // Red Residences - central apartment building
+  buildRedResidences(residencesPos.x, 0, residencesPos.z);
+
+  // Corner Shop
+  buildShop(30, 0, 30);
+
+  // Basketball court
+  buildBasketballCourt(-32, 0, 28);
+
+  // Park gazebo
+  buildGazebo(-30, 0, -28);
+
+  // Statue
+  buildStatue(28, 0, -30);
+
+  // Park benches scattered around
+  var benchSpots=[[12,0,0],[-12,0,0],[0,0,12],[0,0,-12],[18,0,18],[-18,0,18],[18,0,-18],[-18,0,-18]];
+  benchSpots.forEach(function(b){makeBench(b[0],0,b[2]);});
+
+  // Red lanterns along paths
+  for(var i=-3;i<=3;i++){
+    if(i===0)continue;
+    makeLantern(i*12,0,5);
+    makeLantern(i*12,0,-5);
+    makeLantern(5,0,i*12);
+    makeLantern(-5,0,i*12);
+  }
+
+  // Red trees - reduced count for mobile performance
+  var treePositions=[];
+  for(var i=0;i<35;i++){
+    var angle=(i/35)*Math.PI*2;
+    var r=18+Math.random()*55;
+    var tx=Math.cos(angle)*r+(Math.random()-0.5)*14;
+    var tz=Math.sin(angle)*r+(Math.random()-0.5)*14;
+    if(Math.abs(tx)<5&&Math.abs(tz)<70)continue;
+    if(Math.abs(tz)<5&&Math.abs(tx)<70)continue;
+    treePositions.push([tx,tz]);
+  }
+  for(var i=0;i<10;i++){
+    var tx=(Math.random()-0.5)*50+40;
+    var tz=(Math.random()-0.5)*50;
+    treePositions.push([tx,tz]);
+  }
+  treePositions.forEach(function(tp){
+    makeTree(tp[0],0,tp[1],0.7+Math.random()*0.8);
+  });
+
+  // Rocks
+  for(var i=0;i<15;i++){
+    var a=Math.random()*Math.PI*2,r=12+Math.random()*40;
+    var rx=Math.cos(a)*r,rz=Math.sin(a)*r;
+    var rs=0.4+Math.random()*1.0;
+    var rock=new THREE.Mesh(new THREE.DodecahedronGeometry(rs,0),new THREE.MeshLambertMaterial({color:0x4a1010}));
+    rock.position.set(rx,rs*0.3,rz);
+    rock.rotation.set(Math.random(),Math.random(),Math.random());
+    rock.castShadow=true;rock.receiveShadow=true;
+    scene.add(rock);
+  }
+
+  // Small wildflowers (no roses)
+  for(var i=0;i<40;i++){
+    var a=Math.random()*Math.PI*2,r=4+Math.random()*55;
+    var fx=Math.cos(a)*r,fz=Math.sin(a)*r;
+    var stem=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.3,5),new THREE.MeshLambertMaterial({color:0x2a4a0a}));
+    stem.position.set(fx,0.15,fz);scene.add(stem);
+    var flowerColors=[0xffdd44,0xff9933,0xffffff,0xffaacc,0x88ddff];
+    var head=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,6),new THREE.MeshLambertMaterial({color:flowerColors[i%flowerColors.length]}));
+    head.position.set(fx,0.36,fz);scene.add(head);
+  }
+
+  // Moon / large red orb in sky
+  var moonMat=new THREE.MeshBasicMaterial({color:0xff2200});
+  var moon=new THREE.Mesh(new THREE.SphereGeometry(8,16,16),moonMat);
+  moon.position.set(120,80,-150);
+  scene.add(moon);
+  var moonGlow=new THREE.PointLight(0xff3300,1.5,200);
+  moonGlow.position.copy(moon.position);
+  scene.add(moonGlow);
+
+  // Stars in sky - reduced
+  for(var i=0;i<60;i++){
+    var a=Math.random()*Math.PI*2,b=0.3+Math.random()*0.5;
+    var sr=100+Math.random()*80;
+    var sx=Math.cos(a)*Math.cos(b)*sr,sy=Math.sin(b)*sr+40,sz=Math.sin(a)*Math.cos(b)*sr;
+    var star=new THREE.Mesh(new THREE.SphereGeometry(0.3+Math.random()*0.4,4,4),new THREE.MeshBasicMaterial({color:0xffcccc}));
+    star.position.set(sx,sy,sz);
+    scene.add(star);
+  }
+
+  // Distant dark hills
+  var hillMat=new THREE.MeshLambertMaterial({color:0x1a0505,transparent:true,opacity:0.7});
+  for(var i=0;i<8;i++){
+    var mh=15+Math.random()*25;
+    var mt=new THREE.Mesh(new THREE.ConeGeometry(14+Math.random()*10,mh,8),hillMat);
+    var a=(i/8)*Math.PI*2;
+    mt.position.set(Math.cos(a)*140,mh/2-2,Math.sin(a)*140);
+    scene.add(mt);
+  }
+
+  // Floating red orbs (like fireflies)
+  var orbCols=[0xff2200,0xff5500,0xff0033,0xdd1144,0xff6600];
+  for(var i=0;i<10;i++){
+    var a=(i/10)*Math.PI*2;
+    var orb=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,8),new THREE.MeshBasicMaterial({color:orbCols[i%5]}));
+    orb.position.set(Math.cos(a)*10,1.5+Math.random(),Math.sin(a)*10);
+    orb.userData={baseY:orb.position.y,idx:i,baseX:orb.position.x,baseZ:orb.position.z};
+    var pl=new THREE.PointLight(orbCols[i%5],0.8,6);
+    pl.position.copy(orb.position);
+    orb.userData.light=pl;
+    scene.add(orb);scene.add(pl);
+    orbMeshes.push(orb);
+  }
+}
+
+function makeTree(x,y,z,scale){
+  scale=scale||1;
+  var trunkH=(1.8+Math.random()*1.2)*scale;
+  var trunkR=0.18*scale;
+  var trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(trunkR*0.7,trunkR,trunkH,8),
+    new THREE.MeshLambertMaterial({color:0x3a0a0a})
+  );
+  trunk.position.set(x,y+trunkH/2,z);
+  trunk.castShadow=true;
+  scene.add(trunk);
+  // Red layered foliage
+  var leafColors=[0x8b0000,0xaa1111,0xcc2020,0x6b0000];
+  var layers=2+Math.floor(Math.random()*2);
+  for(var i=0;i<layers;i++){
+    var lh=(2.5-i*0.4)*scale;
+    var lr=(1.4-i*0.25)*scale;
+    var leaf=new THREE.Mesh(
+      new THREE.ConeGeometry(lr,lh,10),
+      new THREE.MeshLambertMaterial({color:leafColors[i%leafColors.length]})
+    );
+    leaf.position.set(x,y+trunkH+i*0.9*scale,z);
+    leaf.castShadow=true;
+    leaf.receiveShadow=true;
+    scene.add(leaf);
+  }
+  treeMeshes.push({x:x,z:z,r:trunkR*3});
+}
+
+function makeFountain(x,y,z){
+  // Base
+  var baseMat=new THREE.MeshLambertMaterial({color:0x4a1010});
+  var base=new THREE.Mesh(new THREE.CylinderGeometry(3,3.5,0.4,24),baseMat);
+  base.position.set(x,y+0.2,z);base.castShadow=true;scene.add(base);
+  // Bowl
+  var bowl=new THREE.Mesh(new THREE.CylinderGeometry(2.5,2,0.6,24),baseMat);
+  bowl.position.set(x,y+0.7,z);scene.add(bowl);
+  // Water
+  var waterMat=new THREE.MeshLambertMaterial({color:0x990020,transparent:true,opacity:0.7});
+  var water=new THREE.Mesh(new THREE.CircleGeometry(2.3,32),waterMat);
+  water.rotation.x=-Math.PI/2;water.position.set(x,y+1.01,z);scene.add(water);
+  // Center pillar
+  var pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.25,1.5,12),baseMat);
+  pillar.position.set(x,y+1.5,z);scene.add(pillar);
+  // Top ornament
+  var top=new THREE.Mesh(new THREE.SphereGeometry(0.35,12,12),new THREE.MeshLambertMaterial({color:0x6a0010}));
+  top.position.set(x,y+2.4,z);scene.add(top);
+  // Red glow light
+  var fl=new THREE.PointLight(0xff0030,2,18);
+  fl.position.set(x,y+1.5,z);scene.add(fl);
+  // Animate — reuse orbMeshes trick
+  var fOrb=new THREE.Mesh(new THREE.SphereGeometry(0.01),new THREE.MeshBasicMaterial());
+  fOrb.position.set(x,y+1.5,z);
+  fOrb.userData={flame:false,fountain:true,baseY:y+1.5,light:fl};
+  scene.add(fOrb);orbMeshes.push(fOrb);
+}
+
+function makeBench(x,y,z){
+  var mat=new THREE.MeshLambertMaterial({color:0x2a0505});
+  // Seat
+  var seat=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.12,0.7),mat);
+  seat.position.set(x,y+0.55,z);seat.castShadow=true;scene.add(seat);
+  // Back
+  var back=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.55,0.1),mat);
+  back.position.set(x,y+0.9,z-0.3);scene.add(back);
+  // Legs
+  var legMat=new THREE.MeshLambertMaterial({color:0x4a0808});
+  [[0.9,0.25],[-0.9,0.25],[0.9,-0.25],[-0.9,-0.25]].forEach(function(lp){
+    var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.5,8),legMat);
+    leg.position.set(x+lp[0],y+0.25,z+lp[1]);scene.add(leg);
+  });
+}
+
+function makeLantern(x,y,z){
+  var postMat=new THREE.MeshLambertMaterial({color:0x3a0808});
+  var post=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,3,8),postMat);
+  post.position.set(x,y+1.5,z);post.castShadow=true;scene.add(post);
+  // Lantern box
+  var lanMat=new THREE.MeshBasicMaterial({color:0xff1a1a});
+  var lan=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.4,0.35),lanMat);
+  lan.position.set(x,y+3.1,z);scene.add(lan);
+  // Light
+  var ll=new THREE.PointLight(0xff2200,1.2,12);
+  ll.position.set(x,y+3.1,z);scene.add(ll);
+  // Animate lantern glow
+  var lOrb=new THREE.Mesh(new THREE.SphereGeometry(0.01),new THREE.MeshBasicMaterial());
+  lOrb.position.set(x,y+3.1,z);
+  lOrb.userData={flame:true,baseY:y+3.1,fireLight:ll};
+  scene.add(lOrb);orbMeshes.push(lOrb);
+}
+
+// ==================== EXTRA WORLD CONTENT ====================
+function buildShop(x,y,z){
+  var wallMat=new THREE.MeshLambertMaterial({color:0x7a2020});
+  var trimMat=new THREE.MeshLambertMaterial({color:0x2a0a0a});
+  var glassMat=new THREE.MeshBasicMaterial({color:0xaaddff,transparent:true,opacity:0.6});
+  var awningMat=new THREE.MeshLambertMaterial({color:0xcc2222});
+
+  var body=new THREE.Mesh(new THREE.BoxGeometry(10,5,8),wallMat);
+  body.position.set(x,y+2.5,z);body.castShadow=true;body.receiveShadow=true;scene.add(body);
+
+  var roof=new THREE.Mesh(new THREE.BoxGeometry(10.6,0.5,8.6),trimMat);
+  roof.position.set(x,y+5.25,z);scene.add(roof);
+
+  // Storefront glass
+  var glass=new THREE.Mesh(new THREE.BoxGeometry(7,2.6,0.15),glassMat);
+  glass.position.set(x,y+1.8,z+4.05);scene.add(glass);
+
+  // Door
+  var door=new THREE.Mesh(new THREE.BoxGeometry(1.3,2.4,0.15),new THREE.MeshBasicMaterial({color:0x331111}));
+  door.position.set(x+3.6,y+1.2,z+4.05);scene.add(door);
+
+  // Awning (striped)
+  for(var i=-4;i<4;i++){
+    var stripe=new THREE.Mesh(new THREE.BoxGeometry(1,0.15,1.6),new THREE.MeshLambertMaterial({color:i%2===0?0xcc2222:0xf5f5f5}));
+    stripe.position.set(x+i*1.05+0.5,y+3.5,z+4.6);stripe.rotation.x=-0.25;scene.add(stripe);
+  }
+
+  // Sign
+  var signMat=new THREE.MeshBasicMaterial({color:0xffdd00});
+  var sign=new THREE.Mesh(new THREE.BoxGeometry(6,1,0.3),signMat);
+  sign.position.set(x,y+5.9,z+4.1);scene.add(sign);
+  var signLight=new THREE.PointLight(0xffcc00,1.5,12);
+  signLight.position.set(x,y+6,z+5);scene.add(signLight);
+
+  // Shelving visible through window (simple boxes)
+  [-2,0,2].forEach(function(sx){
+    var shelf=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.8,0.5),new THREE.MeshLambertMaterial({color:0x553311}));
+    shelf.position.set(x+sx,y+1.2,z+2.5);scene.add(shelf);
+  });
+
+  makeLantern(x-6,y,z+5);
+  makeLantern(x+6,y,z+5);
+}
+
+function buildBasketballCourt(x,y,z){
+  var courtMat=new THREE.MeshLambertMaterial({color:0x3a2010});
+  var court=new THREE.Mesh(new THREE.PlaneGeometry(22,12),courtMat);
+  court.rotation.x=-Math.PI/2;court.position.set(x,y+0.02,z);scene.add(court);
+
+  // Court lines
+  var lineMat=new THREE.MeshBasicMaterial({color:0xffffff});
+  var border=new THREE.Mesh(new THREE.RingGeometry(2.9,3.1,32),lineMat);
+  border.rotation.x=-Math.PI/2;border.position.set(x,y+0.03,z);scene.add(border);
+  [[-9,'l'],[9,'r']].forEach(function(side){
+    var sx=side[0];
+    var line=new THREE.Mesh(new THREE.PlaneGeometry(0.15,12),lineMat);
+    line.rotation.x=-Math.PI/2;line.position.set(x+sx,y+0.03,z);scene.add(line);
+  });
+  var midline=new THREE.Mesh(new THREE.PlaneGeometry(0.15,12),lineMat);
+  midline.rotation.x=-Math.PI/2;midline.position.set(x,y+0.03,z);scene.add(midline);
+  var topLine=new THREE.Mesh(new THREE.PlaneGeometry(22,0.15),lineMat);
+  topLine.rotation.x=-Math.PI/2;topLine.position.set(x,y+0.03,z-6);scene.add(topLine);
+  var botLine=new THREE.Mesh(new THREE.PlaneGeometry(22,0.15),lineMat);
+  botLine.rotation.x=-Math.PI/2;botLine.position.set(x,y+0.03,z+6);scene.add(botLine);
+
+  // Hoops on both ends
+  [[-9.5,1],[9.5,-1]].forEach(function(h){
+    var hx=x+h[0],dir=h[1];
+    var poleMat=new THREE.MeshLambertMaterial({color:0x222222});
+    var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,4,8),poleMat);
+    pole.position.set(hx,y+2,z);pole.castShadow=true;scene.add(pole);
+    var backboard=new THREE.Mesh(new THREE.BoxGeometry(0.1,1.4,1.8),new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.85}));
+    backboard.position.set(hx+dir*0.4,y+3.6,z);scene.add(backboard);
+    var rim=new THREE.Mesh(new THREE.TorusGeometry(0.45,0.05,8,16),new THREE.MeshBasicMaterial({color:0xff6600}));
+    rim.rotation.x=Math.PI/2;rim.position.set(hx+dir*0.85,y+3,z);scene.add(rim);
+  });
+
+  // Bleacher bench on the side
+  for(var i=0;i<3;i++){
+    var bench=new THREE.Mesh(new THREE.BoxGeometry(12,0.3,1),new THREE.MeshLambertMaterial({color:0x4a2020}));
+    bench.position.set(x,y+0.3+i*0.5,z+8+i*0.8);scene.add(bench);
+  }
+  makeLantern(x-10,y,z-7);
+  makeLantern(x+10,y,z-7);
+}
+
+function buildGazebo(x,y,z){
+  var postMat=new THREE.MeshLambertMaterial({color:0x4a0808});
+  var roofMat=new THREE.MeshLambertMaterial({color:0x8a1515});
+  var floorMat=new THREE.MeshLambertMaterial({color:0x3a1515});
+
+  var floor=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,0.3,8),floorMat);
+  floor.position.set(x,y+0.15,z);scene.add(floor);
+
+  for(var i=0;i<6;i++){
+    var a=(i/6)*Math.PI*2;
+    var post=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,3,8),postMat);
+    post.position.set(x+Math.cos(a)*2.8,y+1.5,z+Math.sin(a)*2.8);post.castShadow=true;scene.add(post);
+  }
+  var roof=new THREE.Mesh(new THREE.ConeGeometry(3.6,1.8,8),roofMat);
+  roof.position.set(x,y+3.9,z);roof.castShadow=true;scene.add(roof);
+  var finial=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,8),new THREE.MeshLambertMaterial({color:0xffcc00}));
+  finial.position.set(x,y+4.9,z);scene.add(finial);
+
+  // Bench seats inside
+  for(var i=0;i<3;i++){
+    var a=(i/3)*Math.PI*2+0.5;
+    var seat=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,0.5),postMat);
+    seat.position.set(x+Math.cos(a)*1.8,y+0.5,z+Math.sin(a)*1.8);
+    seat.rotation.y=a;
+    scene.add(seat);
+  }
+  makeLantern(x,y,z+4.5);
+}
+
+function buildStatue(x,y,z){
+  var stoneMat=new THREE.MeshLambertMaterial({color:0x5a4a4a});
+  var darkStone=new THREE.MeshLambertMaterial({color:0x3a2a2a});
+
+  // Base pedestal
+  var base=new THREE.Mesh(new THREE.BoxGeometry(3,0.6,3),darkStone);
+  base.position.set(x,y+0.3,z);base.castShadow=true;scene.add(base);
+  var mid=new THREE.Mesh(new THREE.BoxGeometry(2,1.6,2),stoneMat);
+  mid.position.set(x,y+1.4,z);mid.castShadow=true;scene.add(mid);
+
+  // Simple abstract figure on top (rose-themed bloom since rose was removed from name not world flavor)
+  var stem=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,2,10),stoneMat);
+  stem.position.set(x,y+3.2,z);stem.castShadow=true;scene.add(stem);
+  var bloomMat=new THREE.MeshLambertMaterial({color:0x7a1515});
+  for(var i=0;i<5;i++){
+    var a=(i/5)*Math.PI*2;
+    var petal=new THREE.Mesh(new THREE.SphereGeometry(0.5,8,8),bloomMat);
+    petal.position.set(x+Math.cos(a)*0.4,y+4.3,z+Math.sin(a)*0.4);
+    petal.scale.set(1,0.6,1);
+    scene.add(petal);
+  }
+  var center=new THREE.Mesh(new THREE.SphereGeometry(0.35,8,8),new THREE.MeshLambertMaterial({color:0x4a0a0a}));
+  center.position.set(x,y+4.3,z);scene.add(center);
+
+  // Statue light
+  var sl=new THREE.PointLight(0xff4444,1.2,10);
+  sl.position.set(x,y+4,z);scene.add(sl);
+
+  makeLantern(x-3.5,y,z);
+  makeLantern(x+3.5,y,z);
+}
+
+
+var houseSlots=[];  // kept for compat
+
+function buildRedResidences(x,y,z){
+  var bMat=new THREE.MeshLambertMaterial({color:0x6b0a0a});
+  var bMatDark=new THREE.MeshLambertMaterial({color:0x3d0505});
+  var bMatLight=new THREE.MeshLambertMaterial({color:0x8a1515});
+  var bMatTrim=new THREE.MeshLambertMaterial({color:0x2a0000});
+  var windowGlow=new THREE.MeshBasicMaterial({color:0xff8833});
+  var windowOff=new THREE.MeshBasicMaterial({color:0x1a0505});
+  var colMat=new THREE.MeshLambertMaterial({color:0x4a0808});
+
+  // ---- MAIN TOWER (centre, tallest) ----
+  var tower=new THREE.Mesh(new THREE.BoxGeometry(16,30,14),bMat);
+  tower.position.set(x,y+15,z);tower.castShadow=true;tower.receiveShadow=true;scene.add(tower);
+
+  // ---- LEFT WING ----
+  var wingL=new THREE.Mesh(new THREE.BoxGeometry(10,22,12),bMatDark);
+  wingL.position.set(x-13,y+11,z);wingL.castShadow=true;scene.add(wingL);
+
+  // ---- RIGHT WING ----
+  var wingR=new THREE.Mesh(new THREE.BoxGeometry(10,22,12),bMatDark);
+  wingR.position.set(x+13,y+11,z);wingR.castShadow=true;scene.add(wingR);
+
+  // ---- ROOF PARAPETS ----
+  var roofMain=new THREE.Mesh(new THREE.BoxGeometry(17,1.2,15),bMatLight);
+  roofMain.position.set(x,y+30.6,z);scene.add(roofMain);
+  var roofL=new THREE.Mesh(new THREE.BoxGeometry(11,1,13),bMatLight);
+  roofL.position.set(x-13,y+22.5,z);scene.add(roofL);
+  var roofR=new THREE.Mesh(new THREE.BoxGeometry(11,1,13),bMatLight);
+  roofR.position.set(x+13,y+22.5,z);scene.add(roofR);
+
+  // ---- PENTHOUSE roof box ----
+  var penthouse=new THREE.Mesh(new THREE.BoxGeometry(10,3,10),bMatDark);
+  penthouse.position.set(x,y+32.5,z);scene.add(penthouse);
+  var penRoof=new THREE.Mesh(new THREE.BoxGeometry(11,0.4,11),bMatLight);
+  penRoof.position.set(x,y+34.2,z);scene.add(penRoof);
+
+  // ---- CORNICE STRIPS between floors ----
+  var floors=[6,12,18,24];
+  floors.forEach(function(fy){
+    var co=new THREE.Mesh(new THREE.BoxGeometry(17.5,0.35,14.5),bMatLight);
+    co.position.set(x,y+fy,z);scene.add(co);
+    var coL=new THREE.Mesh(new THREE.BoxGeometry(10.5,0.3,12.5),bMatLight);
+    coL.position.set(x-13,y+fy,z);scene.add(coL);
+    var coR=new THREE.Mesh(new THREE.BoxGeometry(10.5,0.3,12.5),bMatLight);
+    coR.position.set(x+13,y+fy,z);scene.add(coR);
+  });
+
+  // ---- ENTRANCE COLUMNS ----
+  [-4,-1.3,1.3,4].forEach(function(cx){
+    var col=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,9,12),colMat);
+    col.position.set(x+cx,y+4.5,z+7.2);col.castShadow=true;scene.add(col);
+    var cap=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.4,0.8),bMatLight);
+    cap.position.set(x+cx,y+9.2,z+7.2);scene.add(cap);
+  });
+
+  // ---- ENTRANCE STEPS ----
+  for(var s=0;s<4;s++){
+    var step=new THREE.Mesh(new THREE.BoxGeometry(12-s*0.4,0.3,1.2),bMatLight);
+    step.position.set(x,y+s*0.3,z+7.8+s*0.5);scene.add(step);
+  }
+
+  // ---- GRAND ENTRANCE ARCH ----
+  var arch=new THREE.Mesh(new THREE.BoxGeometry(4,5,0.5),bMatLight);
+  arch.position.set(x,y+2.5,z+7.1);scene.add(arch);
+  var archTop=new THREE.Mesh(new THREE.CylinderGeometry(2,2,0.5,16,1,false,0,Math.PI),bMatLight);
+  archTop.rotation.z=Math.PI/2;archTop.rotation.y=Math.PI/2;
+  archTop.position.set(x,y+5,z+7.1);scene.add(archTop);
+
+  // ---- GRAND DOORS ----
+  var doorMat=new THREE.MeshBasicMaterial({color:0xcc1111});
+  var doorL2=new THREE.Mesh(new THREE.BoxGeometry(1.6,4,0.2),doorMat);
+  doorL2.position.set(x-0.85,y+2,z+7.05);scene.add(doorL2);
+  var doorR2=new THREE.Mesh(new THREE.BoxGeometry(1.6,4,0.2),doorMat);
+  doorR2.position.set(x+0.85,y+2,z+7.05);scene.add(doorR2);
+  var doorLight=new THREE.PointLight(0xff2200,2.5,20);
+  doorLight.position.set(x,y+5,z+9);scene.add(doorLight);
+
+  // ---- WINDOWS (all facades) ----
+  var floors5=[3,9,15,21,27];
+  var floors3=[3,9,15];
+  // Main tower front
+  for(var f=0;f<floors5.length;f++){
+    for(var w=0;w<4;w++){
+      var wx=x-5.5+w*3.5;
+      var wy=y+floors5[f];
+      var lit=Math.random()>0.25;
+      var wm=lit?windowGlow:windowOff;
+      var win=new THREE.Mesh(new THREE.BoxGeometry(1.6,2,0.18),wm);
+      win.position.set(wx,wy,z+7.1);scene.add(win);
+      if(lit){var wl=new THREE.PointLight(0xff6600,0.5,5);wl.position.set(wx,wy,z+6.5);scene.add(wl);}
+      hotelWindows.push({f:f,w:w,lit:lit});
+    }
+  }
+  // Wings front
+  [-13,13].forEach(function(wx2){
+    for(var f=0;f<floors3.length;f++){
+      for(var w=0;w<2;w++){
+        var wx=x+wx2-1.5+w*3;
+        var wy=y+floors3[f];
+        var lit=Math.random()>0.3;
+        var win=new THREE.Mesh(new THREE.BoxGeometry(1.6,2,0.18),lit?windowGlow:windowOff);
+        win.position.set(wx,wy,z+6.1);scene.add(win);
+        if(lit){var wl=new THREE.PointLight(0xff6600,0.4,4);wl.position.set(wx,wy,z+5.5);scene.add(wl);}
+      }
+    }
+  });
+
+  // ---- SIGN ----
+  var signMat=new THREE.MeshBasicMaterial({color:0xff1111});
+  var sign=new THREE.Mesh(new THREE.BoxGeometry(13,1.8,0.4),signMat);
+  sign.position.set(x,y+31.5,z+7.2);scene.add(sign);
+  var signLight=new THREE.PointLight(0xff0000,3,30);
+  signLight.position.set(x,y+32,z+9);scene.add(signLight);
+  var signOrb=new THREE.Mesh(new THREE.SphereGeometry(0.01),new THREE.MeshBasicMaterial());
+  signOrb.position.set(x,y+32,z+9);
+  signOrb.userData={flame:true,baseY:y+32,fireLight:signLight};
+  scene.add(signOrb);orbMeshes.push(signOrb);
+
+  // ---- SIDE BALCONIES (decorative) ----
+  for(var f=0;f<3;f++){
+    var baly=y+8+f*6;
+    var balL=new THREE.Mesh(new THREE.BoxGeometry(8,0.3,2),bMatTrim);
+    balL.position.set(x-13,baly,z-5);scene.add(balL);
+    var balR=new THREE.Mesh(new THREE.BoxGeometry(8,0.3,2),bMatTrim);
+    balR.position.set(x+13,baly,z-5);scene.add(balR);
+  }
+
+  // ---- LAMP POSTS flanking entrance ----
+  makeLantern(x-8,y,z+9);
+  makeLantern(x+8,y,z+9);
+  makeLantern(x-14,y,z+9);
+  makeLantern(x+14,y,z+9);
+
+  // ---- ENTRANCE PLAZA ----
+  var plaza=new THREE.Mesh(new THREE.PlaneGeometry(40,20),new THREE.MeshLambertMaterial({color:0x2a0808}));
+  plaza.rotation.x=-Math.PI/2;plaza.position.set(x,y+0.01,z+16);scene.add(plaza);
+
+  // Store entrance for proximity
+  residencesPos={x:x,z:z+7};
+}
+
+// ==================== RED RESIDENCES PROXIMITY & MENU ====================
+function checkHotelProximity(){
+  if(!camera)return;
+  var dx=camera.position.x-residencesPos.x;
+  var dz=camera.position.z-residencesPos.z;
+  var dist=Math.sqrt(dx*dx+dz*dz);
+  var hint=document.getElementById('hotel-hint');
+  if(dist<12){
+    if(!nearResidences){
+      nearResidences=true;
+      hint.textContent='🏢 Red Residences — Tap to enter';
+      hint.style.display='block';
+    }
+  } else {
+    if(nearResidences){nearResidences=false;hint.style.display='none';}
+  }
+}
+
+function openHotelMenu(){
+  var el=document.getElementById('hotel-menu');
+  el.classList.add('open');
+  renderResidencesMenu();
+}
+
+function closeHotelMenu(){
+  document.getElementById('hotel-menu').classList.remove('open');
+}
+
+function renderResidencesMenu(){
+  var onlinePlayers=Object.values(remotePlayers);
+  var floorsEl=document.getElementById('hotel-floors');
+  var html='';
+
+  // Section 1: Online players you can visit
+  html+='<div class="hotel-floor"><div class="hotel-floor-label">🟢 Online Residents</div><div class="hotel-rooms" style="display:flex;flex-direction:column;gap:8px;padding:10px">';
+  if(!onlinePlayers.length){
+    html+='<div style="color:#6b7280;font-size:13px;text-align:center;padding:12px">No other players online right now</div>';
+  } else {
+    onlinePlayers.forEach(function(p){
+      var houseNum=getPlayerHouseIndex(p.username)+1;
+      html+='<div class="res-player-row" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,80,80,.1);border-radius:12px;padding:10px 12px">';
+      html+='<div style="width:36px;height:36px;border-radius:50%;background:'+p.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+esc(p.username)[0].toUpperCase()+'</div>';
+      html+='<div style="flex:1"><div style="font-size:13px;font-weight:700">'+esc(p.username)+'</div><div style="font-size:11px;color:#6b7280">Apt #'+houseNum+'</div></div>';
+      html+='<button class="sb sb-g" onclick="sendVisitRequest(\''+esc(p.username)+'\')">📨 Visit</button>';
+      html+='</div>';
+    });
+  }
+  html+='</div></div>';
+
+  // Section 2: My apartment info
+  var myApt=getMyHouseIndex()+1;
+  html+='<div class="hotel-floor" style="margin-top:8px"><div class="hotel-floor-label">🏠 Your Apartment</div>';
+  html+='<div style="padding:14px;display:flex;align-items:center;gap:12px">';
+  html+='<div style="width:44px;height:44px;border-radius:50%;background:'+myColor+';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;border:2px solid rgba(255,180,0,.5)">'+esc(myUsername||'')[0].toUpperCase()+'</div>';
+  html+='<div><div style="font-size:14px;font-weight:800">'+esc(myUsername||'')+'</div><div style="font-size:12px;color:#f87171">Apartment #'+myApt+' · Red Residences</div></div>';
+  html+='</div></div>';
+
+  floorsEl.innerHTML=html;
+}
+
+function sendVisitRequest(toUsername){
+  socket.emit('visit_request',{token:token,toUsername:toUsername});
+  showNotif('📨 Visit request sent','Waiting for '+toUsername+' to accept…',null,3000);
+  closeHotelMenu();
+}
+
+function getMyHouseIndex(){
+  if(!myUsername)return 0;
+  var h=0;for(var i=0;i<myUsername.length;i++)h=(h*31+myUsername.charCodeAt(i))&0xffff;
+  return h%50;
+}
+function getPlayerHouseIndex(username){
+  var h=0;for(var i=0;i<username.length;i++)h=(h*31+username.charCodeAt(i))&0xffff;
+  return h%50;
+}
+function visitHouse(idx){
+  closeHotelMenu();
+  // Teleport player to in front of the building (entrance positions vary by apt number)
+  var offset=(idx%10-4.5)*3;
+  camera.position.set(residencesPos.x+offset,2,residencesPos.z+6);
+  yaw=Math.PI;camera.rotation.y=yaw;
+  showNotif('🏠 Apt #'+(idx+1),'Welcome!',null,2000);
+}
+function visitMyRoom(){visitHouse(getMyHouseIndex());}
+// compat
+function getMyRoomNum(){return getMyHouseIndex();}
+function getPlayerRoomNum(u){return getPlayerHouseIndex(u);}
+function visitRoom(n){visitHouse(n);}
+
+// Patch: open residences menu when near and clicking/tapping
+var nearHouse=false;
+var nearHouseIndex=-1;
+
+function animScene(t){
+  // Remote player limb animation
+  for(var id in remotePlayers){
+    var rp=remotePlayers[id];
+    var ud=rp.mesh.userData;
+    if(!ud||!ud.armL)continue;
+    ud.animT=(ud.animT||0)+0.05;
+    if(ud.anim==='walk'){
+      var sw=Math.sin(ud.animT*6)*0.55;
+      ud.armL.rotation.x=sw;
+      ud.armR.rotation.x=-sw;
+      ud.legL.rotation.x=-sw*0.8;
+      ud.legR.rotation.x=sw*0.8;
+    } else {
+      var sw=Math.sin(ud.animT*1.5)*0.04;
+      ud.armL.rotation.x=sw;
+      ud.armR.rotation.x=-sw;
+      ud.legL.rotation.x=0;
+      ud.legR.rotation.x=0;
+    }
+  }
+  // Orb / lantern / fountain animation
+  orbMeshes.forEach(function(o,i){
+    if(o.userData.flame){
+      o.position.y=o.userData.baseY+Math.sin(t*8+i)*0.05;
+      o.scale&&o.scale.set&&o.scale.set(0.9+Math.sin(t*7)*0.12,1+Math.sin(t*5)*0.18,0.9+Math.cos(t*6)*0.12);
+      if(o.userData.fireLight){o.userData.fireLight.intensity=1.0+Math.sin(t*7+i)*0.35;}
+    } else if(o.userData.fountain){
+      if(o.userData.light){o.userData.light.intensity=1.8+Math.sin(t*3+i)*0.5;}
+    } else if(o.userData.baseY!==undefined){
+      o.position.y=o.userData.baseY+Math.sin(t*1.5+o.userData.idx*0.8)*0.35;
+      o.position.x=o.userData.baseX+Math.cos(t*0.8+o.userData.idx)*0.5;
+      o.position.z=o.userData.baseZ+Math.sin(t*0.6+o.userData.idx)*0.5;
+      if(o.userData.light){o.userData.light.position.copy(o.position);}
+    }
+  });
+}
+
+// ==================== REMOTE PLAYERS ====================
+function addRemote(id,p){
+  if(remotePlayers[id])return;
+  var g=new THREE.Group();
+  var col=parseInt(p.color.replace('#',''),16);
+  var skinCol=0xffcc99;
+  var darkCol=Math.max(0,col-0x222222);
+
+  var bodyMat=new THREE.MeshLambertMaterial({color:col});
+  var skinMat=new THREE.MeshLambertMaterial({color:skinCol});
+  var darkMat=new THREE.MeshLambertMaterial({color:darkCol});
+  var eyeMat=new THREE.MeshBasicMaterial({color:0x111111});
+  var pantsMat=new THREE.MeshLambertMaterial({color:0x1a2a3a});
+  var shoeMat=new THREE.MeshLambertMaterial({color:0x111111});
+
+  // HEAD
+  var head=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.62,0.62),skinMat);
+  head.position.y=1.5;head.castShadow=true;g.add(head);
+
+  // Eyes
+  var eyeL=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.1,0.04),eyeMat);
+  eyeL.position.set(-0.14,1.54,0.32);g.add(eyeL);
+  var eyeR=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.1,0.04),eyeMat);
+  eyeR.position.set(0.14,1.54,0.32);g.add(eyeR);
+
+  // Hair/hat slab (player color on top of head)
+  var hair=new THREE.Mesh(new THREE.BoxGeometry(0.64,0.18,0.64),bodyMat);
+  hair.position.y=1.86;g.add(hair);
+
+  // TORSO
+  var torso=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.3),bodyMat);
+  torso.position.y=0.95;torso.castShadow=true;g.add(torso);
+
+  // LEFT ARM
+  var armL=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.65,0.22),bodyMat);
+  armL.position.set(-0.41,0.95,0);armL.castShadow=true;g.add(armL);
+
+  // RIGHT ARM
+  var armR=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.65,0.22),bodyMat);
+  armR.position.set(0.41,0.95,0);armR.castShadow=true;g.add(armR);
+
+  // LEFT LEG
+  var legL=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.65,0.24),pantsMat);
+  legL.position.set(-0.17,0.33,0);legL.castShadow=true;g.add(legL);
+
+  // RIGHT LEG
+  var legR=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.65,0.24),pantsMat);
+  legR.position.set(0.17,0.33,0);legR.castShadow=true;g.add(legR);
+
+  // SHOES
+  var shoeL=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.12,0.3),shoeMat);
+  shoeL.position.set(-0.17,0.0,0.03);g.add(shoeL);
+  var shoeR=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.12,0.3),shoeMat);
+  shoeR.position.set(0.17,0.0,0.03);g.add(shoeR);
+
+  // store limb refs for walk animation
+  g.userData={armL:armL,armR:armR,legL:legL,legR:legR,anim:'idle',animT:Math.random()*10};
+
+  g.position.set(p.x,p.y+0.06,p.z);
+  g.rotation.y=p.rotY||0;
+  scene.add(g);
+
+  // Name label
+  var lbl=document.createElement('div');
+  lbl.className='plabel';
+  lbl.textContent=p.username;
+  lbl.style.color=p.color;
+  document.getElementById('labels').appendChild(lbl);
+
+  remotePlayers[id]={mesh:g,lbl:lbl,username:p.username,color:p.color};
+}
+
+// ==================== MOVEMENT ====================
+var lastSent=0;
+function handleMove(dt){
+  var spd=moveSpeed*(isSprinting?2.0:1.0)*dt;
+  var moved=false;
+
+  // Joystick or keyboard
+  var fwd=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+  var right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+
+  if(joyActive){
+    camera.position.addScaledVector(fwd,-joyY*spd);
+    camera.position.addScaledVector(right,joyX*spd);
+    if(Math.abs(joyX)+Math.abs(joyY)>0.1)moved=true;
+  } else if(!chatOpen){
+    if(keys['KeyW']||keys['ArrowUp']){camera.position.addScaledVector(fwd,spd);moved=true;}
+    if(keys['KeyS']||keys['ArrowDown']){camera.position.addScaledVector(fwd,-spd);moved=true;}
+    if(keys['KeyA']||keys['ArrowLeft']){camera.position.addScaledVector(right,-spd);moved=true;}
+    if(keys['KeyD']||keys['ArrowRight']){camera.position.addScaledVector(right,spd);moved=true;}
+  }
+
+  // Jump
+  if((keys['Space']||jumpQueued)&&camera.position.y<=2.05){velY=7;jumpQueued=false;}
+  velY-=18*dt;
+  camera.position.y+=velY*dt;
+  if(camera.position.y<2){camera.position.y=2;velY=0;}
+
+  // World bounds
+  camera.position.x=Math.max(-120,Math.min(120,camera.position.x));
+  camera.position.z=Math.max(-120,Math.min(120,camera.position.z));
+
+  // Send position
+  var now=Date.now();
+  if(now-lastSent>55){
+    lastSent=now;
+    socket.emit('move',{x:camera.position.x,y:camera.position.y-2,z:camera.position.z,rotY:yaw,anim:moved?'walk':'idle'});
+  }
+}
+
+function doJump(){jumpQueued=true;}
+
+function updateLabels(){
+  for(var id in remotePlayers){
+    var rp=remotePlayers[id];
+    var pos=rp.mesh.position.clone();
+    pos.y+=1.4;
+    var proj=pos.project(camera);
+    if(proj.z>1){rp.lbl.style.display='none';continue;}
+    rp.lbl.style.display='block';
+    rp.lbl.style.left=((proj.x*.5+.5)*innerWidth)+'px';
+    rp.lbl.style.top=((-.5*proj.y+.5)*innerHeight)+'px';
+  }
+}
+
+// ==================== MINIMAP ====================
+function drawMinimap(){
+  var mc=document.getElementById('mmc').getContext('2d');
+  var W=110,H=110,scale=0.45;
+  mc.fillStyle='#1a3a1a';mc.fillRect(0,0,W,H);
+  // Circular clip
+  mc.save();mc.beginPath();mc.arc(W/2,H/2,W/2-1,0,Math.PI*2);mc.clip();
+  // Draw trees as dots
+  treeMeshes.forEach(function(tr){
+    var mx=W/2+tr.x*scale,mz=H/2+tr.z*scale;
+    if(mx<0||mx>W||mz<0||mz>H)return;
+    mc.fillStyle='#2d6b2d';mc.beginPath();mc.arc(mx,mz,2.5,0,Math.PI*2);mc.fill();
+  });
+  // Paths
+  mc.fillStyle='rgba(80,60,30,0.6)';
+  mc.fillRect(W/2-3,0,6,H);
+  mc.fillRect(0,H/2-3,W,6);
+  // Fountain at center
+  mc.fillStyle='#4488aa';mc.beginPath();mc.arc(W/2,H/2,4,0,Math.PI*2);mc.fill();
+  // Remote players
+  for(var id in remotePlayers){
+    var rp=remotePlayers[id];
+    var rpx=W/2+rp.mesh.position.x*scale,rpz=H/2+rp.mesh.position.z*scale;
+    if(rpx<2||rpx>W-2||rpz<2||rpz>H-2)continue;
+    mc.fillStyle=rp.color||'#fff';mc.beginPath();mc.arc(rpx,rpz,3.5,0,Math.PI*2);mc.fill();
+  }
+  // Me - white dot with green ring
+  var px=W/2+camera.position.x*scale,pz=H/2+camera.position.z*scale;
+  // Direction indicator
+  mc.strokeStyle='rgba(74,222,128,.7)';mc.lineWidth=1.5;
+  mc.beginPath();mc.moveTo(px,pz);
+  mc.lineTo(px-Math.sin(yaw)*10,pz-Math.cos(yaw)*10);
+  mc.stroke();
+  mc.fillStyle='#fff';mc.beginPath();mc.arc(px,pz,4.5,0,Math.PI*2);mc.fill();
+  mc.strokeStyle='#4ade80';mc.lineWidth=2;mc.stroke();
+  mc.restore();
+  // Border
+  mc.strokeStyle='rgba(255,255,255,.12)';mc.lineWidth=2;
+  mc.beginPath();mc.arc(W/2,H/2,W/2-1,0,Math.PI*2);mc.stroke();
+}
+
+// ==================== INPUT ====================
+function setupInput(){
+  var c=document.getElementById('c');
+  c.addEventListener('click',function(){
+    if(chatOpen)return;
+    if(nearResidences){openHotelMenu();return;}
+    if(window.innerWidth>768)c.requestPointerLock();
+  });
+  document.addEventListener('pointerlockchange',function(){isLocked=document.pointerLockElement===c;});
+  document.addEventListener('mousemove',function(e){
+    if(!isLocked||chatOpen)return;
+    yaw-=e.movementX*.002*sensitivity;
+    pitch-=e.movementY*.002*sensitivity;
+    pitch=Math.max(-1.3,Math.min(1.3,pitch));
+    camera.rotation.y=yaw;camera.rotation.x=pitch;
+  });
+  document.addEventListener('keydown',function(e){
+    keys[e.code]=true;
+    if(e.code==='KeyT'&&!chatOpen&&isLocked){e.preventDefault();openChatMobile();}
+    if(e.code==='Escape'){if(chatOpen)closeChatInput();else if(document.pointerLockElement)document.exitPointerLock();}
+    if(e.code==='Enter'&&chatOpen)sendChat();
+  });
+  document.addEventListener('keyup',function(e){keys[e.code]=false;});
+}
+
+function setupMobileControls(){
+  // Joystick
+  var jOuter=document.getElementById('joy-outer');
+  var jInner=document.getElementById('joy-inner');
+  var jRect,jStartX,jStartY;
+  jOuter.addEventListener('touchstart',function(e){
+    e.preventDefault();
+    jRect=jOuter.getBoundingClientRect();
+    joyActive=true;
+  },{passive:false});
+  jOuter.addEventListener('touchmove',function(e){
+    e.preventDefault();
+    var t=e.touches[0];
+    var cx=jRect.left+jRect.width/2,cy=jRect.top+jRect.height/2;
+    var dx=t.clientX-cx,dy=t.clientY-cy;
+    var dist=Math.min(Math.sqrt(dx*dx+dy*dy),50);
+    var angle=Math.atan2(dy,dx);
+    joyX=Math.cos(angle)*(dist/50);
+    joyY=Math.sin(angle)*(dist/50);
+    joyActive=true;
+    jInner.style.left=(65-27+Math.cos(angle)*dist)+'px';
+    jInner.style.top=(65-27+Math.sin(angle)*dist)+'px';
+  },{passive:false});
+  jOuter.addEventListener('touchend',function(e){e.preventDefault();joyActive=false;joyX=0;joyY=0;jInner.style.left='38px';jInner.style.top='38px';},{passive:false});
+
+  // Look zone
+  var lz=document.getElementById('look-zone');
+  lz.addEventListener('touchstart',function(e){
+    var t=e.changedTouches[0];
+    if(lookTouchId===null){lookTouchId=t.identifier;lastLookX=t.clientX;lastLookY=t.clientY;}
+  },{passive:true});
+  lz.addEventListener('touchmove',function(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(t.identifier===lookTouchId){
+        var dx=t.clientX-lastLookX,dy=t.clientY-lastLookY;
+        yaw-=dx*0.004*sensitivity;
+        pitch-=dy*0.004*sensitivity;
+        pitch=Math.max(-1.3,Math.min(1.3,pitch));
+        camera.rotation.y=yaw;camera.rotation.x=pitch;
+        lastLookX=t.clientX;lastLookY=t.clientY;
+      }
+    }
+  },{passive:true});
+  lz.addEventListener('touchend',function(e){
+    for(var i=0;i<e.changedTouches.length;i++){if(e.changedTouches[i].identifier===lookTouchId)lookTouchId=null;}
+  },{passive:true});
+}
+
+function openChatMobile(){
+  chatOpen=true;
+  if(document.pointerLockElement)document.exitPointerLock();
+  document.getElementById('chat-input').classList.add('open');
+  document.getElementById('chat-send').classList.add('open');
+  document.getElementById('chat-input').disabled=false;
+  document.getElementById('chat-input').focus();
+}
+function closeChatInput(){
+  chatOpen=false;
+  document.getElementById('chat-input').classList.remove('open');
+  document.getElementById('chat-send').classList.remove('open');
+  document.getElementById('chat-input').disabled=true;
+  document.getElementById('chat-input').value='';
+}
+function sendChat(){
+  var ci=document.getElementById('chat-input');
+  var m=ci.value.trim();
+  if(isMuted){showNotif('🔇 Muted','You cannot send messages',null,2000);closeChatInput();return;}
+  if(m)socket.emit('chat',{token:token,message:m});
+  closeChatInput();
+}
+function addChatMsg(d){
+  var msgs=document.getElementById('chat-msgs');
+  var el=document.createElement('div');
+  el.className='cmsg';
+  el.style.borderLeftColor=d.color;
+  var roleTag=d.admin?'<span class="cmsg-admin">ADMIN</span>':(d.mod?'<span class="cmsg-admin" style="background:#fb923c">MOD</span>':'');
+  el.innerHTML='<span class="cmsg-name" style="color:'+d.color+'">'+roleTag+esc(d.username)+'</span> '+esc(d.message);
+  msgs.appendChild(el);
+  msgs.scrollTop=msgs.scrollHeight;
+  while(msgs.children.length>50)msgs.removeChild(msgs.firstChild);
+}
+
+// ==================== WRIST MENU ====================
+function toggleWrist(){
+  var m=document.getElementById('wrist-menu');
+  var b=document.getElementById('wrist-btn');
+  if(m.classList.contains('open')){m.classList.remove('open');b.classList.remove('open');b.textContent='☰';}
+  else{m.classList.add('open');b.classList.add('open');b.textContent='+';if(isAdmin)socket.emit('admin_list',{token:token});}
+}
+function closeWrist(){
+  document.getElementById('wrist-menu').classList.remove('open');
+  document.getElementById('wrist-btn').classList.remove('open');
+  document.getElementById('wrist-btn').textContent='☰';
+}
+function updateWristFriends(){
+  document.getElementById('friends-count').textContent=friendData.friends.length+' friends';
+  document.getElementById('stat-friends').textContent=friendData.friends.length;
+}
+
+// ==================== PANELS ====================
+function openPanel(id){
+  closeAllPanels();
+  document.getElementById(id).classList.add('open');
+  if(id==='admin-panel')socket.emit('admin_list',{token:token});
+  if(id==='friends-panel')renderFriends();
+  if(id==='profile-panel'){
+    document.getElementById('stat-online').textContent=Object.keys(remotePlayers).length+1;
+    document.getElementById('stat-friends').textContent=friendData.friends.length;
+  }
+}
+function closeAllPanels(){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('open');});
+}
+
+// ==================== FRIENDS ====================
+function renderFriends(){
+  var onlineUsers=Object.values(remotePlayers).map(function(p){return p.username;});
+  var reqSec=document.getElementById('freq-sec');
+  var reqList=document.getElementById('freq-list');
+  if(friendData.requests.length>0){
+    reqSec.style.display='block';
+    reqList.innerHTML=friendData.requests.map(function(u){return '<div class="f-item"><div class="f-avatar" style="background:#334155">'+u[0].toUpperCase()+'</div><div class="f-info"><div class="f-name">'+esc(u)+'</div><div class="f-status">Wants to be friends</div></div><div class="f-btns"><button class="sb sb-g" onclick="socket.emit(\'friend_accept\',{token:token,fromUsername:\''+esc(u)+'\'})">✓</button><button class="sb sb-r" onclick="socket.emit(\'friend_decline\',{token:token,fromUsername:\''+esc(u)+'\'})">✕</button></div></div>';}).join('');
+  } else reqSec.style.display='none';
+  var fl=document.getElementById('friends-list');
+  if(!friendData.friends.length){fl.innerHTML='<div style="color:#6b7280;font-size:13px;text-align:center;padding:20px">No friends yet! Add someone above.</div>';return;}
+  fl.innerHTML=friendData.friends.map(function(u){
+    var on=onlineUsers.includes(u);
+    return '<div class="f-item"><div class="f-avatar" style="background:#1a0a0a;color:#f87171">'+u[0].toUpperCase()+'</div><div class="f-info"><div class="f-name">'+esc(u)+'</div><div class="f-status '+(on?'on':'')+'">'+( on?'🟢 In Red Park':'⚫ Offline')+'</div></div><div class="f-btns"><button class="sb sb-r" onclick="socket.emit(\'friend_remove\',{token:token,friendUsername:\''+esc(u)+'\'})">Remove</button></div></div>';
+  }).join('');
+}
+function sendFriendReq(){var u=document.getElementById('add-f-inp').value.trim();if(!u)return;socket.emit('friend_request',{token:token,toUsername:u});document.getElementById('add-f-inp').value='';}
+
+// ==================== TAG GAME UI ====================
+var tagState={active:false};
+function openTagPanel(){closeAllPanels();document.getElementById('tag-panel').classList.add('open');renderTagUI();}
+function renderTagUI(){
+  var idleV=document.getElementById('tag-idle-view');
+  var activeV=document.getElementById('tag-active-view');
+  if(!idleV)return;
+  if(tagState.active){
+    idleV.style.display='none';activeV.style.display='block';
+    document.getElementById('tag-it-name').textContent=tagState.itUsername||'—';
+    var secs=Math.ceil((tagState.msLeft||0)/1000);
+    document.getElementById('tag-timer').textContent=secs+'s left';
+    var list=tagState.participants||[];
+    document.getElementById('tag-participants').innerHTML=list.map(function(u){
+      var isIt=u===tagState.itUsername;
+      var canTag=(myUsername===tagState.itUsername&&u!==myUsername);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:10px;padding:8px 12px">'
+        +'<span style="font-size:13px;font-weight:600;'+(isIt?'color:#f87171':'')+'">'+(isIt?'🎯 ':'')+esc(u)+(u===myUsername?' (you)':'')+'</span>'
+        +(canTag?'<button class="sb sb-r" onclick="socket.emit(\'tag_tag\',{token:token,targetUsername:\''+esc(u)+'\'})">Tag!</button>':'')
+        +'</div>';
+    }).join('')||'<div style="color:#6b7280;font-size:12px;text-align:center">No one has joined yet</div>';
+    // Show floating HUD badge
+    showTagHud();
+  } else {
+    idleV.style.display='block';activeV.style.display='none';
+    hideTagHud();
+  }
+}
+function showTagHud(){
+  var hud=document.getElementById('tag-hud');
+  if(!hud)return;
+  hud.style.display='block';
+  var isIt=myUsername===tagState.itUsername;
+  hud.innerHTML=isIt?'🎯 YOU ARE IT — tag someone!':'🎯 Tag is live — '+(tagState.itUsername||'?')+' is IT';
+  hud.style.background=isIt?'rgba(220,38,38,.95)':'rgba(0,0,0,.6)';
+}
+function hideTagHud(){var hud=document.getElementById('tag-hud');if(hud)hud.style.display='none';}
+function aa(action){
+  var target=document.getElementById('admin-t').value.trim();
+  if(!target)return;
+  var reason=document.getElementById('admin-reason').value.trim();
+  socket.emit('admin_action',{token:token,action:action,targetUsername:target,reason:reason});
+}
+function renderAdminList(list){
+  document.getElementById('admin-only-row').style.display=isAdmin?'flex':'none';
+  document.getElementById('admin-list').innerHTML=list.map(function(u){
+    var badges=(u.admin?'<span class="badge badge-a">ADMIN</span>':'')
+      +(u.mod&&!u.admin?'<span class="badge" style="background:#fb923c;color:#000">MOD</span>':'')
+      +(u.banned?'<span class="badge badge-b">BANNED</span>':'')
+      +(u.muted?'<span class="badge" style="background:#6b7280;color:#fff">MUTED</span>':'')
+      +(u.warnings>0?'<span class="badge" style="background:#fbbf24;color:#000">⚠️'+u.warnings+'</span>':'')
+      +(u.online?'<span class="badge badge-o">ONLINE</span>':'');
+    var modBtns='<button class="sb sb-r" onclick="qaAdmin(\'kick\',\''+esc(u.username)+'\')">Kick</button>'
+      +'<button class="sb sb-r" onclick="qaAdmin(\'ban\',\''+esc(u.username)+'\')">Ban</button>'
+      +'<button class="sb sb-g" onclick="qaAdmin(\'unban\',\''+esc(u.username)+'\')">Unban</button>'
+      +(u.muted?'<button class="sb sb-g" onclick="qaAdmin(\'unmute\',\''+esc(u.username)+'\')">Unmute</button>':'<button class="sb sb-b" onclick="qaAdmin(\'mute\',\''+esc(u.username)+'\')">Mute</button>')
+      +'<button class="sb sb-r" onclick="qaAdmin(\'warn\',\''+esc(u.username)+'\')">⚠️ Warn</button>';
+    var adminBtns=isAdmin?((u.admin?'<button class="sb sb-b" onclick="qaAdmin(\'removeadmin\',\''+esc(u.username)+'\')">-Admin</button>':'<button class="sb sb-b" onclick="qaAdmin(\'makeadmin\',\''+esc(u.username)+'\')">+Admin</button>')
+      +(u.mod?'<button class="sb sb-b" onclick="qaAdmin(\'removemod\',\''+esc(u.username)+'\')">-Mod</button>':'<button class="sb sb-b" onclick="qaAdmin(\'makemod\',\''+esc(u.username)+'\')">+Mod</button>')):'';
+    return '<div class="admin-row" style="flex-direction:column;align-items:flex-start;gap:6px"><div><span class="admin-name">'+esc(u.username)+'</span>'+badges+'</div>'
+      +'<div class="admin-btns">'+modBtns+adminBtns+'</div></div>';
+  }).join('');
+}
+function qaAdmin(a,u){document.getElementById('admin-t').value=u;socket.emit('admin_action',{token:token,action:a,targetUsername:u,reason:document.getElementById('admin-reason').value.trim()});}
+
+// ==================== SETTINGS ====================
+function setShadows(v){
+  if(!renderer)return;
+  renderer.shadowMap.enabled=v>0;
+  if(v===2)renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  else renderer.shadowMap.type=THREE.BasicShadowMap;
+}
+
+// ==================== HUD ====================
+function updateHUD(){
+  var c=Object.keys(remotePlayers).length+1;
+  document.getElementById('pc').textContent=c+' player'+(c!==1?'s':'');
+}
+
+// ==================== NOTIFICATIONS ====================
+function showNotif(title,body,actions,timeout){
+  var area=document.getElementById('notif-area');
+  var el=document.createElement('div');
+  el.className='notif';
+  el.innerHTML='<div class="notif-title">'+title+'</div>'+(body?'<div class="notif-body">'+esc(body)+'</div>':'');
+  if(actions&&actions.length){
+    var row=document.createElement('div');row.className='notif-btns';
+    actions.forEach(function(a){
+      var b=document.createElement('button');
+      b.className='sb '+(a.cls||'sb-g');b.textContent=a.l;
+      b.onclick=function(){a.fn();el.remove();};
+      row.appendChild(b);
+    });
+    el.appendChild(row);
+  }
+  area.appendChild(el);
+  var t=timeout||(actions&&actions.length?0:3500);
+  if(t)setTimeout(function(){if(el.parentNode)el.remove();},t);
+}
+
+// ==================== UTILS ====================
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function doLogout(){
+  token=null;myUsername=null;
+  clearSession();
+  if(animId)cancelAnimationFrame(animId);
+  document.getElementById('game-wrap').style.display='none';
+  document.getElementById('start-screen').classList.remove('hidden');
+  closeAllPanels();closeWrist();
+  for(var id in remotePlayers){if(remotePlayers[id].lbl)remotePlayers[id].lbl.remove();}
+  remotePlayers={};
+}
+
+// ==================== LOADING STARS ====================
+(function initStars(){
+  var sc=document.getElementById('loading-stars');
+  if(!sc)return;
+  function resize(){sc.width=innerWidth;sc.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  var ctx=sc.getContext('2d');
+  var stars=[];
+  for(var i=0;i<180;i++){
+    stars.push({x:Math.random(),y:Math.random(),r:0.5+Math.random()*1.5,s:0.3+Math.random()*0.7,p:Math.random()*Math.PI*2,sp:0.5+Math.random()*1.5});
+  }
+  function drawStars(){
+    if(!document.getElementById('loading')||document.getElementById('loading').style.display==='none')return;
+    ctx.clearRect(0,0,sc.width,sc.height);
+    var t=Date.now()/1000;
+    stars.forEach(function(s){
+      var alpha=s.s*(0.5+0.5*Math.sin(t*s.sp+s.p));
+      ctx.fillStyle='rgba(255,200,200,'+alpha+')';
+      ctx.beginPath();
+      ctx.arc(s.x*sc.width,s.y*sc.height,s.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+})();
+
+// ==================== START ====================
+function startApp(){
+  initSocket();
+  setTimeout(function(){
+    document.getElementById('loading').style.display='none';
+    // Try auto-login from saved session
+    var s=loadSession();
+    if(s&&s.token&&s.username){
+      // Pre-fill and show game while socket connects
+      document.getElementById('start-screen').classList.remove('hidden');
+      document.getElementById('lu').value=s.username;
+    } else {
+      document.getElementById('start-screen').classList.remove('hidden');
+    }
+  },500);
+}
+</script>
 </body>
 </html>
